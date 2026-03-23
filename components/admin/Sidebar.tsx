@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
-  ShoppingCart,
+  Image,
   BarChart3,
   Settings,
   FileText,
