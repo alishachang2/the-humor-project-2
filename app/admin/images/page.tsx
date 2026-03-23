@@ -21,7 +21,7 @@ type CaptionWithImageRecord = {
     name: string
     path: string
     url: string
-  } | null
+  }[]
 }
 
 const BUCKET = 'images'
@@ -79,7 +79,7 @@ export default function ImagesPage() {
       return
     }
 
-    setImages(buildImageRecords(data))
+    setImages(buildImageRecords(data as CaptionWithImageRecord[]))
     setTotalCount(count ?? 0)
     setLoading(false)
   }
@@ -280,7 +280,8 @@ export default function ImagesPage() {
 
 function buildImageRecords(rows: CaptionWithImageRecord[]) {
   return rows.reduce<ImageRecord[]>((result, row) => {
-    if (!row.images) return result
+    const imageRecord = row.images[0]
+    if (!imageRecord) return result
 
     const existingImage = result.find(image => image.id === row.image_id)
     if (existingImage) {
@@ -289,10 +290,10 @@ function buildImageRecords(rows: CaptionWithImageRecord[]) {
     }
 
     result.push({
-      id: row.images.id,
-      path: row.images.path,
-      name: row.images.name,
-      url: row.images.url,
+      id: imageRecord.id,
+      path: imageRecord.path,
+      name: imageRecord.name,
+      url: imageRecord.url,
       created_at: '',
       captions: row.content ? [row.content] : [],
     })
