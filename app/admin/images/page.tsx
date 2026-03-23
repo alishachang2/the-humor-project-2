@@ -6,21 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 type ImageRecord = {
   id: string
   path: string
-  name: string
   url: string
-  created_at: string
-  captions: string[]
-}
-
-type ImageWithCaptionsRecord = {
-  id: string
-  path: string
-  name: string
-  url: string
-  created_at: string
-  captions: {
-    content: string | null
-  }[] | null
 }
 
 const BUCKET = 'images'
@@ -53,20 +39,8 @@ export default function ImagesPage() {
 
     const { data, error, count } = await supabase
       .from('images')
-      .select(
-        `
-          id,
-          path,
-          name,
-          url,
-          created_at,
-          captions (
-            content
-          )
-        `,
-        { count: 'exact' }
-      )
-      .order('created_at', { ascending: false })
+      .select('id, path, url', { count: 'exact' })
+      .order('id', { ascending: true })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (error || !data) {
@@ -77,7 +51,7 @@ export default function ImagesPage() {
       return
     }
 
-    setImages(buildImageRecords(data as ImageWithCaptionsRecord[]))
+    setImages(data as ImageRecord[])
     setTotalCount(count ?? 0)
     setLoading(false)
   }
@@ -107,7 +81,7 @@ export default function ImagesPage() {
       const { data, error: dbError } = await supabase
         .from('images')
         .insert({ path, name: file.name, url: publicUrl })
-        .select()
+        .select('id, path, url')
         .single()
       if (dbError) {
         console.error(dbError)
@@ -191,20 +165,16 @@ export default function ImagesPage() {
                 <div className="aspect-square overflow-hidden bg-[#fafafa]">
                   <img
                     src={image.url}
-                    alt={image.name}
+                    alt={`image ${image.id}`}
                     className="h-full w-full object-cover"
                   />
                 </div>
 
-                <div className="space-y-3 px-4 py-4">
+                <div className="px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-[#2a2a2a]">{image.name}</p>
-                      <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-[#8a8a8a]">
-                        {image.captions.length} caption{image.captions.length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-[#8a8a8a]">
+                      image {image.id}
+                    </p>
                     <button
                       type="button"
                       onClick={() => handleDelete(image)}
@@ -225,18 +195,6 @@ export default function ImagesPage() {
                         </svg>
                       )}
                     </button>
-                  </div>
-
-                  <div className="space-y-2 border-t border-[#f0f0f0] pt-3">
-                    {image.captions.length > 0 ? (
-                      image.captions.map((caption, index) => (
-                        <p key={`${image.id}-${index}`} className="text-sm leading-6 text-[#5a5a5a]">
-                          {caption}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-sm italic text-[#8a8a8a]">No captions yet.</p>
-                    )}
                   </div>
                 </div>
               </article>
@@ -274,17 +232,4 @@ export default function ImagesPage() {
       )}
     </div>
   )
-}
-
-function buildImageRecords(rows: ImageWithCaptionsRecord[]) {
-  return rows.map(row => ({
-    id: row.id,
-    path: row.path,
-    name: row.name,
-    url: row.url,
-    created_at: row.created_at,
-    captions: (row.captions ?? [])
-      .map(caption => caption.content)
-      .filter((content): content is string => Boolean(content)),
-  }))
 }
