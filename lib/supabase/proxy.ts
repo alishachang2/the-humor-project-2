@@ -31,11 +31,10 @@ export async function updateSession(request: NextRequest) {
     if (
         !user &&
         request.nextUrl.pathname !== '/' &&
-        !request.nextUrl.pathname.startsWith('/login') &&
         !request.nextUrl.pathname.startsWith('/auth')
     ) {
         const url = request.nextUrl.clone()
-        url.pathname = '/login'
+        url.pathname = '/'
         return NextResponse.redirect(url)
     }
     if (request.nextUrl.pathname.startsWith('/admin')){
@@ -47,7 +46,7 @@ export async function updateSession(request: NextRequest) {
         console.log(`Are they superadmin${superadmin}`)
         if (!superadmin?.is_superadmin){
             const url = request.nextUrl.clone()
-            url.pathname = '/login'
+            url.pathname = '/'
             return NextResponse.redirect(url)        }
     }
     return supabaseResponse

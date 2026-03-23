@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 const serifFontHref = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap'
@@ -67,20 +66,6 @@ export default function LandingPage() {
           >
             Login with Google
           </button>
-
-          <Link
-            href="/login"
-            style={styles.secondaryLink}
-          >
-            Open login page
-          </Link>
-
-          <Link
-            href="/admin"
-            style={styles.secondaryLink}
-          >
-            Enter admin
-          </Link>
         </section>
       </main>
 
@@ -206,18 +191,6 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     cursor: 'pointer',
     transition: 'background-color 0.2s ease, color 0.2s ease',
-    marginBottom: 12,
-  },
-  secondaryLink: {
-    display: 'block',
-    width: '100%',
-    padding: '12px 0',
-    borderBottom: '1px solid #E0E0E0',
-    color: '#8A8A8A',
-    textDecoration: 'none',
-    fontSize: 12,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
   },
   bottomRule: {
     width: '100%',
