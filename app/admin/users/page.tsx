@@ -14,7 +14,7 @@ export default function AdminUsersPage() {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
-  const pageSize = 15
+  const pageSize = 10
 
   useEffect(() => {
     const fetchProfiles = async () => {
