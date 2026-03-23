@@ -1,5 +1,6 @@
 'use client'
 import { createClient } from '@/lib/supabase/client'
+import LoginUI from '@/components/LoginUI'
 
 export default function Page(){
     const supabase = createClient()
@@ -13,9 +14,7 @@ export default function Page(){
     })
     }
     
-    return (
-        <button onClick={handleGoogleLogin}>
-            Login with Google </button>        
-    )
+    return <LoginUI onGoogleLogin={handleGoogleLogin} />
+
 }
 
