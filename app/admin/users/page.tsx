@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 type Profile = {
@@ -39,14 +38,6 @@ export default function AdminUsersPage() {
         href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap"
         rel="stylesheet"
       />
-
-      <div style={styles.topRule} />
-
-      <div style={styles.topBar}>
-        <Link href="/admin" style={styles.topBarLabel}>← Admin</Link>
-        <span style={styles.topBarIssue}>Profiles</span>
-      </div>
-
       <div style={styles.header}>
         <div style={styles.headerLeft}>
           <p style={styles.eyebrow}>Directory</p>
@@ -149,7 +140,6 @@ export default function AdminUsersPage() {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        * { box-sizing: border-box; }
       `}</style>
     </div>
   )
@@ -163,28 +153,6 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     fontFamily: 'inherit',
     animation: 'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-  },
-  topRule: { width: '100%', height: 2, backgroundColor: '#2A2A2A' },
-  topBar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '14px 48px',
-    borderBottom: '1px solid #E0E0E0',
-  },
-  topBarLabel: {
-    fontSize: 11,
-    fontWeight: 400,
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const,
-    color: '#2A2A2A',
-    textDecoration: 'none',
-  },
-  topBarIssue: {
-    fontSize: 11,
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const,
-    color: '#8A8A8A',
   },
   header: {
     display: 'flex',
