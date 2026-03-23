@@ -84,8 +84,7 @@ export default function ImagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] p-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="mx-auto w-full max-w-5xl">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -210,7 +209,6 @@ export default function ImagesPage() {
           </div>
         )}
 
-      </div>
     </div>
   )
 }
