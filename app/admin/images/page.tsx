@@ -12,16 +12,15 @@ type ImageRecord = {
   captions: string[]
 }
 
-type CaptionWithImageRecord = {
+type ImageWithCaptionsRecord = {
   id: string
-  image_id: string
-  content: string | null
-  images: {
-    id: string
-    name: string
-    path: string
-    url: string
-  }[]
+  path: string
+  name: string
+  url: string
+  created_at: string
+  captions: {
+    content: string | null
+  }[] | null
 }
 
 const BUCKET = 'images'
@@ -53,22 +52,21 @@ export default function ImagesPage() {
     const supabase = createClient()
 
     const { data, error, count } = await supabase
-      .from('captions')
+      .from('images')
       .select(
         `
           id,
-          content,
-          image_id,
-          images (
-            id,
-            name,
-            path,
-            url
+          path,
+          name,
+          url,
+          created_at,
+          captions (
+            content
           )
         `,
         { count: 'exact' }
       )
-      .order('image_id', { ascending: true })
+      .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (error || !data) {
@@ -79,7 +77,7 @@ export default function ImagesPage() {
       return
     }
 
-    setImages(buildImageRecords(data as CaptionWithImageRecord[]))
+    setImages(buildImageRecords(data as ImageWithCaptionsRecord[]))
     setTotalCount(count ?? 0)
     setLoading(false)
   }
@@ -278,26 +276,15 @@ export default function ImagesPage() {
   )
 }
 
-function buildImageRecords(rows: CaptionWithImageRecord[]) {
-  return rows.reduce<ImageRecord[]>((result, row) => {
-    const imageRecord = row.images[0]
-    if (!imageRecord) return result
-
-    const existingImage = result.find(image => image.id === row.image_id)
-    if (existingImage) {
-      if (row.content) existingImage.captions.push(row.content)
-      return result
-    }
-
-    result.push({
-      id: imageRecord.id,
-      path: imageRecord.path,
-      name: imageRecord.name,
-      url: imageRecord.url,
-      created_at: '',
-      captions: row.content ? [row.content] : [],
-    })
-
-    return result
-  }, [])
+function buildImageRecords(rows: ImageWithCaptionsRecord[]) {
+  return rows.map(row => ({
+    id: row.id,
+    path: row.path,
+    name: row.name,
+    url: row.url,
+    created_at: row.created_at,
+    captions: (row.captions ?? [])
+      .map(caption => caption.content)
+      .filter((content): content is string => Boolean(content)),
+  }))
 }
