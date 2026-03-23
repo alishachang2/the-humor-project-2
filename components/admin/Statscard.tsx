@@ -1,5 +1,16 @@
 import { LucideIcon } from 'lucide-react'
 
+const cardStyle = {
+  backgroundColor: 'var(--background)',
+  borderColor: 'var(--border-color)',
+}
+
+const titleStyle = {
+  color: 'var(--text-soft)',
+  fontWeight: '400',
+  letterSpacing: '0.12em',
+}
+
 interface StatsCardProps {
   title: string
   value: string
@@ -13,16 +24,11 @@ export function StatsCard({ title, value, change, isPositive, icon: Icon, accent
   return (
     <div
       className="group p-8 rounded-2xl border transition-all hover:shadow-lg"
-      style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border-color)' }}
+      style={cardStyle}
     >
       <div className="flex items-start justify-between mb-8">
         <div className="space-y-1">
-          <p
-            className="text-xs uppercase tracking-widest"
-            style={{ color: 'var(--text-soft)', fontWeight: '400', letterSpacing: '0.12em' }}
-          >
-            {title}
-          </p>
+          <p className="text-xs uppercase tracking-widest" style={titleStyle}>{title}</p>
           <h2
             className="tracking-tight transition-all group-hover:scale-105 origin-left"
             style={{
@@ -40,7 +46,7 @@ export function StatsCard({ title, value, change, isPositive, icon: Icon, accent
         <div
           className="p-3 rounded-xl transition-all group-hover:scale-110 border"
           style={{
-            backgroundColor: accent || 'rgba(244, 132, 95, 0.12)',
+            backgroundColor: accent ?? 'rgba(244, 132, 95, 0.12)',
             borderColor: 'rgba(166, 145, 141, 0.1)',
           }}
         >

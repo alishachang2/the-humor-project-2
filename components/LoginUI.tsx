@@ -1,27 +1,39 @@
 'use client'
 
-export default function LoginUI({ onGoogleLogin }: { onGoogleLogin: () => void }) {
+const googleFontHref = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap'
+
+interface LoginUIProps {
+  onGoogleLogin: () => void
+}
+
+export default function LoginUI({ onGoogleLogin }: LoginUIProps) {
+  const currentDateLabel = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+
+  const handleButtonMouseEnter = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.currentTarget.style.backgroundColor = '#2A2A2A'
+    event.currentTarget.style.color = '#fff'
+  }
+
+  const handleButtonMouseLeave = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.currentTarget.style.backgroundColor = 'transparent'
+    event.currentTarget.style.color = '#2A2A2A'
+  }
+
   return (
     <div style={styles.page}>
-
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap"
-        rel="stylesheet"
-      />
-
-      {/* Top rule */}
+      <link href={googleFontHref} rel="stylesheet" />
       <div style={styles.topRule} />
 
-      {/* Top bar */}
       <div style={styles.topBar}>
         <span style={styles.topBarLabel}>Admin</span>
         <span style={styles.topBarIssue}>Issue No. 01</span>
       </div>
 
-      {/* Main layout — left: giant type, right: form */}
       <div style={styles.layout}>
-
-        {/* Left — display type */}
         <div style={styles.left}>
           <p style={styles.leftEyebrow}>Access</p>
           <h1 style={styles.leftHeading}>
@@ -34,24 +46,17 @@ export default function LoginUI({ onGoogleLogin }: { onGoogleLogin: () => void }
           </p>
         </div>
 
-        {/* Vertical divider */}
         <div style={styles.vertRule} />
 
-        {/* Right — form */}
         <div style={styles.right}>
           <p style={styles.rightEyebrow}>Continue with</p>
 
           <button
+            type="button"
             onClick={onGoogleLogin}
             style={styles.button}
-            onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = '#2A2A2A'
-              e.currentTarget.style.color = '#fff'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.color = '#2A2A2A'
-            }}
+            onMouseEnter={handleButtonMouseEnter}
+            onMouseLeave={handleButtonMouseLeave}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
               <path fill="#EA4335" d="M5.26620003,9.76452941 C6.19878754,6.93863203 8.85444915,4.90909091 12,4.90909091 C13.6085542,4.90909091 15.0758263,5.44272771 16.2436544,6.35363636 L19.359181,3.23181818 C17.3932746,1.43363636 14.8128722,0.363636364 12,0.363636364 C7.27205135,0.363636364 3.1944741,3.14770348 1.23999023,7.20409652 L5.26620003,9.76452941 Z"/>
@@ -68,15 +73,11 @@ export default function LoginUI({ onGoogleLogin }: { onGoogleLogin: () => void }
         </div>
       </div>
 
-      {/* Bottom rule */}
       <div style={styles.bottomRule} />
 
-      {/* Bottom bar */}
       <div style={styles.bottomBar}>
         <span style={styles.bottomBarLeft}>© 2026</span>
-        <span style={styles.bottomBarRight}>
-          {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-        </span>
+        <span style={styles.bottomBarRight}>{currentDateLabel}</span>
       </div>
 
       <style>{`
@@ -84,7 +85,6 @@ export default function LoginUI({ onGoogleLogin }: { onGoogleLogin: () => void }
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        * { box-sizing: border-box; }
       `}</style>
     </div>
   )
