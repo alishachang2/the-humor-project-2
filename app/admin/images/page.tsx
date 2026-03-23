@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type ImageRecord = {
@@ -12,9 +12,16 @@ type ImageRecord = {
   captions: string[]
 }
 
-type CaptionRecord = {
+type CaptionWithImageRecord = {
+  id: string
   image_id: string
   content: string | null
+  images: {
+    id: string
+    name: string
+    path: string
+    url: string
+  } | null
 }
 
 const BUCKET = 'images'
@@ -22,21 +29,18 @@ const PAGE_SIZE = 9
 
 export default function ImagesPage() {
   const [images, setImages] = useState<ImageRecord[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const totalPages = Math.max(1, Math.ceil(images.length / PAGE_SIZE))
-  const visibleImages = useMemo(
-    () => images.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
-    [images, page]
-  )
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   useEffect(() => {
     fetchImages()
-  }, [])
+  }, [page])
 
   useEffect(() => {
     if (page > totalPages - 1) {
@@ -48,40 +52,35 @@ export default function ImagesPage() {
     setLoading(true)
     const supabase = createClient()
 
-    const { data: imageRows, error: imagesError } = await supabase
-      .from('images')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const { data, error, count } = await supabase
+      .from('captions')
+      .select(
+        `
+          id,
+          content,
+          image_id,
+          images (
+            id,
+            name,
+            path,
+            url
+          )
+        `,
+        { count: 'exact' }
+      )
+      .order('image_id', { ascending: true })
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-    if (imagesError || !imageRows) {
-      if (imagesError) console.error(imagesError)
+    if (error || !data) {
+      if (error) console.error(error)
       setImages([])
+      setTotalCount(0)
       setLoading(false)
       return
     }
 
-    const imageIds = imageRows.map(image => image.id)
-    let captionsByImageId = new Map<string, string[]>()
-
-    if (imageIds.length > 0) {
-      const { data: captionRows, error: captionsError } = await supabase
-        .from('captions')
-        .select('image_id, content')
-        .in('image_id', imageIds)
-
-      if (captionsError) {
-        console.error(captionsError)
-      } else {
-        captionsByImageId = buildCaptionMap(captionRows ?? [])
-      }
-    }
-
-    setImages(
-      imageRows.map(image => ({
-        ...image,
-        captions: captionsByImageId.get(image.id) ?? [],
-      }))
-    )
+    setImages(buildImageRecords(data))
+    setTotalCount(count ?? 0)
     setLoading(false)
   }
 
@@ -117,12 +116,12 @@ export default function ImagesPage() {
         continue
       }
 
-      setImages(prev => [{ ...data, captions: [] }, ...prev])
       setPage(0)
     }
 
     setUploading(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
+    await fetchImages()
   }
 
   async function handleDelete(image: ImageRecord) {
@@ -132,8 +131,8 @@ export default function ImagesPage() {
     await supabase.storage.from(BUCKET).remove([image.path])
     await supabase.from('images').delete().eq('id', image.id)
 
-    setImages(prev => prev.filter(img => img.id !== image.id))
     setDeleting(null)
+    await fetchImages()
   }
 
   return (
@@ -141,7 +140,7 @@ export default function ImagesPage() {
       <div className="mb-6">
         <h1 className="text-lg font-semibold text-[#2a2a2a]">Images</h1>
         <p className="mt-0.5 text-sm text-[#8a8a8a]">
-          {images.length} image{images.length !== 1 ? 's' : ''} in the library
+          {totalCount} image{totalCount !== 1 ? 's' : ''} in the library
         </p>
       </div>
 
@@ -186,7 +185,7 @@ export default function ImagesPage() {
       {!loading && images.length > 0 && (
         <>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleImages.map(image => (
+            {images.map(image => (
               <article
                 key={image.id}
                 className="overflow-hidden rounded-2xl border border-[#e0e0e0] bg-white"
@@ -279,13 +278,25 @@ export default function ImagesPage() {
   )
 }
 
-function buildCaptionMap(captionRows: CaptionRecord[]) {
-  return captionRows.reduce((map, caption) => {
-    if (!caption.content) return map
+function buildImageRecords(rows: CaptionWithImageRecord[]) {
+  return rows.reduce<ImageRecord[]>((result, row) => {
+    if (!row.images) return result
 
-    const captions = map.get(caption.image_id) ?? []
-    captions.push(caption.content)
-    map.set(caption.image_id, captions)
-    return map
-  }, new Map<string, string[]>())
+    const existingImage = result.find(image => image.id === row.image_id)
+    if (existingImage) {
+      if (row.content) existingImage.captions.push(row.content)
+      return result
+    }
+
+    result.push({
+      id: row.images.id,
+      path: row.images.path,
+      name: row.images.name,
+      url: row.images.url,
+      created_at: '',
+      captions: row.content ? [row.content] : [],
+    })
+
+    return result
+  }, [])
 }
