@@ -15,7 +15,7 @@ import {
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', href: '/admin' },
   { icon: Users,           label: 'Users',     id: 'users',     href: '/admin/users' },
-  { icon: ShoppingCart,    label: 'Orders',    id: 'orders',    href: '/admin/orders' },
+  { icon: Image,    label: 'Images',    id: 'images',    href: '/admin/images' },
   { icon: Package,         label: 'Products',  id: 'products',  href: '/admin/products' },
   { icon: BarChart3,       label: 'Analytics', id: 'analytics', href: '/admin/analytics' },
   { icon: FileText,        label: 'Reports',   id: 'reports',   href: '/admin/reports' },
