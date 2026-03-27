@@ -227,18 +227,18 @@ function CaptionsSection() {
                   onClick={() => toggle(id)}
                   style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '11px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
                 >
-                  <span style={{ fontSize: 9, color: '#ccc', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                  <span style={{ fontSize: 9, color: '#999', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
                   <span style={{ fontSize: 12, color: '#333', lineHeight: 1.45, flex: 1 }}>
                     {row.content
                       ? String(row.content).length > 110 ? String(row.content).slice(0, 110) + '…' : String(row.content)
-                      : <span style={{ color: '#ccc' }}>—</span>}
+                      : <span style={{ color: '#999' }}>—</span>}
                   </span>
                 </button>
                 {isOpen && (
                   <div style={{ padding: '4px 14px 14px 33px', display: 'flex', flexDirection: 'column', gap: 5, borderTop: '1px solid #f9f9f9', backgroundColor: '#fafafa' }}>
                     {metaKeys.map(k => (
                       <div key={k} style={{ display: 'flex', gap: 12 }}>
-                        <span style={{ fontSize: 9, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase', width: 160, flexShrink: 0, paddingTop: 2 }}>{k}</span>
+                        <span style={{ fontSize: 9, color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase', width: 160, flexShrink: 0, paddingTop: 2 }}>{k}</span>
                         <span style={{ fontSize: 11, color: '#555', wordBreak: 'break-all' }}>{String(row[k] ?? '—')}</span>
                       </div>
                     ))}
@@ -306,9 +306,9 @@ function HumorFlavorsSection() {
                   onClick={() => toggle(fid)}
                   style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
                 >
-                  <span style={{ fontSize: 9, color: '#ccc', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                  <span style={{ fontSize: 9, color: '#999', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
                   <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a', flex: 1 }}>{String(flavor.slug ?? flavor.name ?? fid)}</span>
-                  <span style={{ fontSize: 10, color: '#bbb' }}>{flavorSteps.length} step{flavorSteps.length !== 1 ? 's' : ''}</span>
+                  <span style={{ fontSize: 10, color: '#888' }}>{flavorSteps.length} step{flavorSteps.length !== 1 ? 's' : ''}</span>
                 </button>
 
                 {/* Steps expansion */}
@@ -318,7 +318,7 @@ function HumorFlavorsSection() {
                       <p style={{ fontSize: 12, color: '#777', margin: '0 0 16px', lineHeight: 1.5 }}>{String(flavor.description)}</p>
                     )}
                     {!flavorSteps.length ? (
-                      <p style={{ fontSize: 12, color: '#ccc', margin: 0 }}>No steps.</p>
+                      <p style={{ fontSize: 12, color: '#999', margin: 0 }}>No steps.</p>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         {flavorSteps.map((step, si) => (
@@ -338,7 +338,7 @@ function HumorFlavorsSection() {
                             {/* Prompts */}
                             {!!step.system_prompt && (
                               <div style={{ padding: '10px 14px', borderBottom: !!step.user_prompt ? '1px solid #f5f5f5' : 'none' }}>
-                                <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' }}>System</p>
+                                <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' }}>System</p>
                                 <PromptText text={String(step.system_prompt)} />
                               </div>
                             )}
@@ -353,7 +353,7 @@ function HumorFlavorsSection() {
                           {si < flavorSteps.length - 1 && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 14px' }}>
                               <div style={{ width: 1, height: 14, backgroundColor: '#ddd', marginLeft: 12 }} />
-                              <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#ccc' }}>output → next step input</span>
+                              <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>output → next step input</span>
                             </div>
                           )}
                           </div>
@@ -418,7 +418,7 @@ function LlmResponsesSection() {
                   onClick={() => toggle(id)}
                   style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '11px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
                 >
-                  <span style={{ fontSize: 9, color: '#ccc', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                  <span style={{ fontSize: 9, color: '#999', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
                   <span style={{ fontSize: 12, color: '#444', flex: 1, lineHeight: 1.4 }}>{preview}</span>
                 </button>
                 {isOpen && (
@@ -427,7 +427,7 @@ function LlmResponsesSection() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 24px' }}>
                       {metaKeys.map(k => (
                         <div key={k} style={{ display: 'flex', gap: 8 }}>
-                          <span style={{ fontSize: 9, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase', paddingTop: 1 }}>{k}</span>
+                          <span style={{ fontSize: 9, color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase', paddingTop: 1 }}>{k}</span>
                           <span style={{ fontSize: 11, color: '#555' }}>{String(row[k] ?? '—')}</span>
                         </div>
                       ))}
@@ -435,7 +435,7 @@ function LlmResponsesSection() {
                     {/* Prompt sent */}
                     {!!row.prompt_sent && (
                       <div>
-                        <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' }}>Prompt sent</p>
+                        <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' }}>Prompt sent</p>
                         <p style={{ fontSize: 12, color: '#444', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', backgroundColor: '#fff', border: '1px solid #eee', padding: '10px 12px' }}>{String(row.prompt_sent)}</p>
                       </div>
                     )}
@@ -650,23 +650,23 @@ export default function PipelinePage() {
 const s: Record<string, React.CSSProperties> = {
   page:        { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
   header:      { padding: '32px 32px 20px' },
-  eyebrow:     { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' },
+  eyebrow:     { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' },
   heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
   tabBar:      { display: 'flex', padding: '0 32px', borderBottom: '1px solid #f0f0f0' },
   tabBtn:      { fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.15s' },
   content:     { padding: '28px 32px 48px', display: 'flex', flexDirection: 'column', gap: 32 },
   divider:     { border: 'none', borderTop: '1px solid #f5f5f5', margin: 0 },
   sectionTitle:{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', margin: 0 },
-  count:       { fontSize: 11, color: '#ccc' },
-  empty:       { fontSize: 12, color: '#ccc', marginTop: 10 },
+  count:       { fontSize: 11, color: '#999' },
+  empty:       { fontSize: 12, color: '#999', marginTop: 10 },
   table:       { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
-  th:          { textAlign: 'left', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbb', padding: '8px 12px', borderBottom: '1px solid #f0f0f0' },
+  th:          { textAlign: 'left', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', padding: '8px 12px', borderBottom: '1px solid #f0f0f0' },
   td:          { padding: '9px 12px', borderBottom: '1px solid #f8f8f8', color: '#444', verticalAlign: 'top', maxWidth: 240, wordBreak: 'break-word' },
   rowBtn:      { fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 10px', background: '#fafafa', color: '#666', border: '1px solid #ebebeb', cursor: 'pointer', borderRadius: 4 },
   addBtn:      { fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 12px', background: '#1a1a1a', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: 4 },
   formBox:     { background: '#fafafa', border: '1px solid #ebebeb', padding: '16px 18px', marginBottom: 14, borderRadius: 6 },
   formTitle:   { fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', margin: '0 0 14px' },
-  label:       { display: 'block', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#bbb', marginBottom: 5 },
+  label:       { display: 'block', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#888', marginBottom: 5 },
   input:       { width: '100%', fontSize: 12, padding: '7px 10px', border: '1px solid #e8e8e8', outline: 'none', boxSizing: 'border-box', backgroundColor: '#fff', borderRadius: 4 },
   saveBtn:     { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: '#1a1a1a', color: '#fff', border: '1px solid #1a1a1a', cursor: 'pointer', borderRadius: 4 },
   cancelBtn:   { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: 'none', color: '#999', border: '1px solid #e8e8e8', cursor: 'pointer', borderRadius: 4 },

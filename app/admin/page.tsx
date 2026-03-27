@@ -10,7 +10,7 @@ type CaptionRow = { id: string; content: string; created_datetime_utc: string }
 // ─── SVG line chart ───────────────────────────────────────────────────────────
 
 function LineChart({ data, color = '#BDE081' }: { data: { label: string; value: number }[]; color?: string }) {
-  if (data.length < 2) return <p style={{ fontSize: 12, color: '#ccc', margin: 0 }}>Not enough data.</p>
+  if (data.length < 2) return <p style={{ fontSize: 12, color: '#999', margin: 0 }}>Not enough data.</p>
 
   const W = 560, H = 120, PAD = { top: 8, right: 12, bottom: 24, left: 30 }
   const iW = W - PAD.left - PAD.right
@@ -84,7 +84,7 @@ function timeAgo(iso: string) {
 // ─── sub-components ───────────────────────────────────────────────────────────
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 12px' }}>{children}</p>
+  return <p style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#888', margin: '0 0 12px' }}>{children}</p>
 }
 
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -156,7 +156,7 @@ export default function AdminPage() {
       <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 24 }} />
 
       {loading ? (
-        <p style={{ padding: '0 48px', fontSize: 12, color: '#ccc' }}>Loading…</p>
+        <p style={{ padding: '0 48px', fontSize: 12, color: '#999' }}>Loading…</p>
       ) : (
         <div style={s.body}>
 
@@ -169,7 +169,7 @@ export default function AdminPage() {
               { label: 'Flavors',  value: totalFlavors },
             ].map(({ label, value, note }) => (
               <Card key={label} style={{ padding: '18px 22px' }}>
-                <p style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 8px' }}>{label}</p>
+                <p style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#888', margin: '0 0 8px' }}>{label}</p>
                 <p style={{ fontSize: 40, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: '#1a1a1a', margin: 0, lineHeight: 1 }}>{value}</p>
                 {note && <p style={{ fontSize: 10, color: '#BDE081', margin: '6px 0 0' }}>{note}</p>}
               </Card>
@@ -193,12 +193,12 @@ export default function AdminPage() {
                     <img src={spotlightImage.url} alt="spotlight" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                   <div style={{ padding: '10px 12px' }}>
-                    <p style={{ fontSize: 10, color: '#bbb', margin: 0 }}>Uploaded {timeAgo(spotlightImage.created_datetime_utc)}</p>
+                    <p style={{ fontSize: 10, color: '#888', margin: 0 }}>Uploaded {timeAgo(spotlightImage.created_datetime_utc)}</p>
                   </div>
                 </Card>
               ) : (
                 <Card style={{ padding: 20, textAlign: 'center' }}>
-                  <p style={{ fontSize: 12, color: '#ccc', margin: 0 }}>No images yet</p>
+                  <p style={{ fontSize: 12, color: '#999', margin: 0 }}>No images yet</p>
                 </Card>
               )}
             </div>
@@ -210,7 +210,7 @@ export default function AdminPage() {
               <Label>Recent uploads</Label>
               <Card>
                 {recentImages.length === 0 ? (
-                  <p style={{ padding: '14px 16px', fontSize: 12, color: '#ccc', margin: 0 }}>No images yet.</p>
+                  <p style={{ padding: '14px 16px', fontSize: 12, color: '#999', margin: 0 }}>No images yet.</p>
                 ) : recentImages.map((img, i) => (
                   <div key={img.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: i < recentImages.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
                     <div style={{ width: 32, height: 32, flexShrink: 0, overflow: 'hidden', backgroundColor: '#f5f5f5' }}>
@@ -219,7 +219,7 @@ export default function AdminPage() {
                     <p style={{ flex: 1, fontSize: 12, color: '#444', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {img.url.split('/').pop()}
                     </p>
-                    <span style={{ fontSize: 10, color: '#ccc', flexShrink: 0 }}>{timeAgo(img.created_datetime_utc)}</span>
+                    <span style={{ fontSize: 10, color: '#999', flexShrink: 0 }}>{timeAgo(img.created_datetime_utc)}</span>
                   </div>
                 ))}
               </Card>
@@ -229,15 +229,15 @@ export default function AdminPage() {
               <Label>Recent captions</Label>
               <Card>
                 {recentCaptions.length === 0 ? (
-                  <p style={{ padding: '14px 16px', fontSize: 12, color: '#ccc', margin: 0 }}>No captions yet.</p>
+                  <p style={{ padding: '14px 16px', fontSize: 12, color: '#999', margin: 0 }}>No captions yet.</p>
                 ) : recentCaptions.map((cap, i) => (
                   <div key={cap.id} style={{ padding: '11px 14px', borderBottom: i < recentCaptions.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
                     <p style={{ fontSize: 12, color: '#444', margin: '0 0 5px', lineHeight: 1.5 }}>
                       {cap.content
                         ? String(cap.content).length > 100 ? String(cap.content).slice(0, 100) + '…' : cap.content
-                        : <span style={{ color: '#ccc' }}>—</span>}
+                        : <span style={{ color: '#999' }}>—</span>}
                     </p>
-                    <span style={{ fontSize: 10, color: '#ccc' }}>{timeAgo(cap.created_datetime_utc)}</span>
+                    <span style={{ fontSize: 10, color: '#999' }}>{timeAgo(cap.created_datetime_utc)}</span>
                   </div>
                 ))}
               </Card>
@@ -260,7 +260,7 @@ export default function AdminPage() {
 const s: Record<string, React.CSSProperties> = {
   page:        { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
   header:      { padding: '32px 32px 20px' },
-  eyebrow:     { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' },
+  eyebrow:     { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' },
   heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
   body:        { padding: '0 32px 48px', display: 'flex', flexDirection: 'column', gap: 28 },
   statsGrid:   { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 },

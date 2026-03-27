@@ -27,7 +27,7 @@ export function Sidebar() {
     }}>
       {/* Brand */}
       <div style={{ padding: '0 24px 28px', borderBottom: '1px solid #f5f5f5' }}>
-        <p style={{ fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 4px' }}>Admin</p>
+        <p style={{ fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#888', margin: '0 0 4px' }}>Admin</p>
         <p style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', margin: 0, letterSpacing: '-0.01em' }}>The Humor Project</p>
       </div>
 

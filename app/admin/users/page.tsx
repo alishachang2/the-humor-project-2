@@ -40,7 +40,7 @@ export default function AdminUsersPage() {
           <p style={s.eyebrow}>Directory</p>
           <h1 style={s.heading}><em>Users.</em></h1>
         </div>
-        <span style={{ fontSize: 12, color: '#bbb' }}>{loading ? '—' : `${profiles.length} shown · page ${page + 1}`}</span>
+        <span style={{ fontSize: 12, color: '#888' }}>{loading ? '—' : `${profiles.length} shown · page ${page + 1}`}</span>
       </div>
 
       <div style={s.rule} />
@@ -60,7 +60,7 @@ export default function AdminUsersPage() {
         ) : profiles.map((profile, i) => (
           <div key={profile.id} style={s.row} className="user-row">
             <span style={{ ...s.cell, flex: '0 0 30%', display: 'flex', gap: 14, alignItems: 'center' }}>
-              <span style={{ fontSize: 10, color: '#ccc', minWidth: 20, fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontSize: 10, color: '#999', minWidth: 20, fontVariantNumeric: 'tabular-nums' }}>
                 {String(page * PAGE_SIZE + i + 1).padStart(2, '0')}
               </span>
               <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>
@@ -68,7 +68,7 @@ export default function AdminUsersPage() {
               </span>
             </span>
             <span style={{ ...s.cell, flex: '0 0 45%', fontSize: 12, color: '#666' }}>{profile.email}</span>
-            <span style={{ ...s.cell, flex: '0 0 25%', fontSize: 11, color: '#bbb', fontFamily: 'monospace' }}>
+            <span style={{ ...s.cell, flex: '0 0 25%', fontSize: 11, color: '#888', fontFamily: 'monospace' }}>
               {profile.id.slice(0, 8)}…
             </span>
           </div>
@@ -83,7 +83,7 @@ export default function AdminUsersPage() {
           disabled={page === 0}
           style={{ ...s.pageBtn, opacity: page === 0 ? 0.3 : 1, cursor: page === 0 ? 'not-allowed' : 'pointer' }}
         >← Prev</button>
-        <span style={{ fontSize: 13, color: '#ccc' }}>{page + 1}</span>
+        <span style={{ fontSize: 13, color: '#999' }}>{page + 1}</span>
         <button
           onClick={() => setPage(p => p + 1)}
           disabled={profiles.length < PAGE_SIZE}
@@ -102,13 +102,13 @@ export default function AdminUsersPage() {
 const s: Record<string, React.CSSProperties> = {
   page:      { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
   header:    { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '32px 32px 20px' },
-  eyebrow:   { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' },
+  eyebrow:   { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' },
   heading:   { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
   rule:      { height: 2, backgroundColor: '#BDE081', marginBottom: 0 },
   tableHead: { display: 'flex', padding: '10px 32px', borderBottom: '1px solid #f0f0f0', backgroundColor: '#fafafa' },
-  col:       { fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#bbb' },
+  col:       { fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#888' },
   row:       { display: 'flex', padding: '12px 32px', borderBottom: '1px solid #f5f5f5', transition: 'background-color 0.1s' },
   cell:      { display: 'flex', alignItems: 'center' },
-  empty:     { padding: '40px 32px', fontSize: 12, color: '#ccc', textAlign: 'center' },
+  empty:     { padding: '40px 32px', fontSize: 12, color: '#999', textAlign: 'center' },
   pageBtn:   { fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 14px', background: 'none', color: '#666', border: '1px solid #e8e8e8', cursor: 'pointer' },
 }
