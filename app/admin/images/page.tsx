@@ -42,7 +42,7 @@ export default function ImagesPage() {
     const { data, error, count } = await supabase
       .from('images')
       .select('id, url', { count: 'exact' })
-      .order('id', { ascending: false })
+      .order('created_datetime_utc', { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (error || !data) {
