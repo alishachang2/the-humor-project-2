@@ -5,21 +5,17 @@ import {
   LayoutDashboard,
   Users,
   Image,
-  BarChart3,
+  Smile,
+  Zap,
   Settings,
-  FileText,
-  Package,
-  MessageSquare,
 } from 'lucide-react'
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', href: '/admin' },
   { icon: Users,           label: 'Users',     id: 'users',     href: '/admin/users' },
-  { icon: Image,    label: 'Images',    id: 'images',    href: '/admin/images' },
-  { icon: Package,         label: 'Products',  id: 'products',  href: '/admin/products' },
-  { icon: BarChart3,       label: 'Analytics', id: 'analytics', href: '/admin/analytics' },
-  { icon: FileText,        label: 'Reports',   id: 'reports',   href: '/admin/reports' },
-  { icon: MessageSquare,   label: 'Messages',  id: 'messages',  href: '/admin/messages' },
+  { icon: Image,           label: 'Images',    id: 'images',    href: '/admin/images' },
+  { icon: Smile,           label: 'Humor',     id: 'humor',     href: '/admin/humor' },
+  { icon: Zap,             label: 'Pipeline',  id: 'pipeline',  href: '/admin/pipeline' },
   { icon: Settings,        label: 'Settings',  id: 'settings',  href: '/admin/settings' },
 ]
 
