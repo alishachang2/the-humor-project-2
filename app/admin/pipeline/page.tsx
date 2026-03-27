@@ -518,7 +518,7 @@ function LlmResponsesSection() {
   return (
     <Section title="LLM Model Responses" count={rows.length}>
       {!rows.length ? <p style={s.empty}>No records.</p> : (
-        <div style={{ border: '1px solid #eee' }}>
+        <div style={{ border: '1px solid #eee', overflowY: 'auto', maxHeight: 'calc(100vh - 320px)' }}>
           {rows.map((row, i) => {
             const id = String(row.id)
             const isOpen = expanded.has(id)
