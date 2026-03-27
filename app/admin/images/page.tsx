@@ -100,16 +100,21 @@ export default function ImagesPage() {
     setUploading(true)
     const supabase = createClient()
 
+    const { data: { user } } = await supabase.auth.getUser()
+    const profileId = user?.id
+
     for (const file of files) {
-      const res = await fetch('/api/presign', {
+      // Phase 1a: get presigned URL from AWS S3
+      const presignRes = await fetch('/api/presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename: file.name, contentType: file.type }),
       })
-      if (!res.ok) { console.error('Failed to get presigned URL'); continue }
+      if (!presignRes.ok) { console.error('Failed to get presigned URL'); continue }
 
-      const { presignedUrl, publicUrl } = await res.json()
+      const { presignedUrl, publicUrl } = await presignRes.json()
 
+      // Phase 1b: upload file directly to S3
       const uploadRes = await fetch(presignedUrl, {
         method: 'PUT',
         headers: { 'Content-Type': file.type },
@@ -117,10 +122,21 @@ export default function ImagesPage() {
       })
       if (!uploadRes.ok) { console.error('Failed to upload to S3'); continue }
 
-      const { error: dbError } = await supabase
+      // Phase 1c: store public URL in Supabase, get back the image ID
+      const { data: imageData, error: dbError } = await supabase
         .from('images')
         .insert({ url: publicUrl })
-      if (dbError) { console.error(dbError); continue }
+        .select('id')
+        .single()
+      if (dbError || !imageData) { console.error(dbError); continue }
+
+      // Phase 2: trigger caption generation pipeline
+      const pipelineRes = await fetch(`${process.env.NEXT_PUBLIC_PIPELINE_URL}/pipeline/generate_captions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_id: imageData.id, profile_id: profileId }),
+      })
+      if (!pipelineRes.ok) console.error('Failed to trigger caption pipeline')
     }
 
     setUploading(false)

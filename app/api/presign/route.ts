@@ -10,21 +10,20 @@ const s3 = new S3Client({
   },
 })
 
-const BUCKET = process.env.AWS_S3_BUCKET!
-
 export async function POST(req: NextRequest) {
+  const bucket = process.env.AWS_S3_BUCKET!
   const { filename, contentType } = await req.json()
 
   const key = `${Date.now()}-${filename}`
 
   const command = new PutObjectCommand({
-    Bucket: BUCKET,
+    Bucket: bucket,
     Key: key,
     ContentType: contentType,
   })
 
   const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 60 })
-  const publicUrl = `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
+  const publicUrl = `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
 
   return NextResponse.json({ presignedUrl, publicUrl })
 }
