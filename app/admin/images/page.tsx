@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 type ImageRecord = { id: string; url: string }
 type Caption     = { id: string; content: string; image_id: string }
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 16
 
 export default function ImagesPage() {
   const [images, setImages]           = useState<ImageRecord[]>([])
@@ -329,7 +329,7 @@ const s: Record<string, React.CSSProperties> = {
   eyebrow:      { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' },
   heading:      { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
   empty:        { padding: 48, textAlign: 'center', fontSize: 12, color: '#999' },
-  grid:         { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16, padding: '0 32px' },
+  grid:         { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, padding: '0 32px' },
   card:         { border: '1px solid #ebebeb', backgroundColor: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRadius: 4 },
   overlay:      { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.42)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
   overlayBtn:   { fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '8px 16px', backgroundColor: 'rgba(255,255,255,0.92)', color: '#1a1a1a', border: 'none', cursor: 'pointer', borderRadius: 2 },

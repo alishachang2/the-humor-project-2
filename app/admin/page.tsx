@@ -5,14 +5,14 @@ import { createClient } from '@/lib/supabase/client'
 
 type ProfileRow = { id: string; created_datetime_utc: string }
 type ImageRow   = { id: string; url: string; created_datetime_utc: string }
-type CaptionRow = { id: string; content: string; created_datetime_utc: string }
+type CaptionRow = { id: string; content: string; image_id: string; created_datetime_utc: string }
 
 // ─── SVG line chart ───────────────────────────────────────────────────────────
 
 function LineChart({ data, color = '#BDE081' }: { data: { label: string; value: number }[]; color?: string }) {
   if (data.length < 2) return <p style={{ fontSize: 12, color: '#999', margin: 0 }}>Not enough data.</p>
 
-  const W = 560, H = 120, PAD = { top: 8, right: 12, bottom: 24, left: 30 }
+  const W = 560, H = 100, PAD = { top: 6, right: 10, bottom: 22, left: 28 }
   const iW = W - PAD.left - PAD.right
   const iH = H - PAD.top - PAD.bottom
   const max = Math.max(...data.map(d => d.value), 1)
@@ -32,23 +32,23 @@ function LineChart({ data, color = '#BDE081' }: { data: { label: string; value: 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
       <defs>
-        <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor={color} stopOpacity="0.15" />
+        <linearGradient id={`grad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor={color} stopOpacity="0.18" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={area} fill="url(#ag)" />
+      <path d={area} fill={`url(#grad-${color.replace('#','')})`} />
       {[0, 0.5, 1].map(t => {
         const y = PAD.top + iH * (1 - t)
         return (
           <g key={t}>
             <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#f0f0f0" strokeWidth="1" />
-            <text x={PAD.left - 5} y={y + 3.5} textAnchor="end" fontSize={8} fill="#ccc">{Math.round(max * t)}</text>
+            <text x={PAD.left - 4} y={y + 3.5} textAnchor="end" fontSize={8} fill="#ddd">{Math.round(max * t)}</text>
           </g>
         )
       })}
-      <polyline points={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      {pts.map(p => <circle key={p.label} cx={p.x} cy={p.y} r={2.5} fill={color} />)}
+      <polyline points={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      {pts.map(p => <circle key={p.label} cx={p.x} cy={p.y} r={2} fill={color} />)}
       {xLabels.map(p => (
         <text key={p.label} x={p.x} y={H - 2} textAnchor="middle" fontSize={8} fill="#ccc">{p.label}</text>
       ))}
@@ -75,33 +75,32 @@ function groupByDay(rows: { created_datetime_utc: string }[], days = 30) {
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
   const mins = Math.floor(diff / 60000)
+  if (mins < 1)  return 'just now'
   if (mins < 60) return `${mins}m ago`
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
+  if (hrs < 24)  return `${hrs}h ago`
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-// ─── sub-components ───────────────────────────────────────────────────────────
-
-function Label({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#888', margin: '0 0 12px' }}>{children}</p>
-}
-
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={{ border: '1px solid #ebebeb', backgroundColor: '#fff', ...style }}>{children}</div>
+function pct(a: number, b: number) {
+  if (b === 0) return null
+  const p = Math.round(((a - b) / b) * 100)
+  return p === 0 ? null : p
 }
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
-  const [profiles, setProfiles]           = useState<ProfileRow[]>([])
-  const [totalImages, setTotalImages]     = useState(0)
+  const [profiles, setProfiles]         = useState<ProfileRow[]>([])
+  const [totalImages, setTotalImages]   = useState(0)
   const [totalCaptions, setTotalCaptions] = useState(0)
-  const [totalFlavors, setTotalFlavors]   = useState(0)
-  const [recentImages, setRecentImages]   = useState<ImageRow[]>([])
+  const [totalFlavors, setTotalFlavors] = useState(0)
+  const [studyCount, setStudyCount]     = useState(0)
+  const [recentImages, setRecentImages] = useState<ImageRow[]>([])
   const [recentCaptions, setRecentCaptions] = useState<CaptionRow[]>([])
-  const [spotlightImage, setSpotlightImage] = useState<ImageRow | null>(null)
-  const [loading, setLoading]             = useState(true)
+  const [captionsByImage, setCaptionsByImage] = useState<Record<string, number>>({})
+  const [allImages, setAllImages]       = useState<ImageRow[]>([])
+  const [loading, setLoading]           = useState(true)
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -113,6 +112,7 @@ export default function AdminPage() {
         { count: imgCount },
         { count: capCount },
         { count: flavorCount },
+        { count: studyC },
         { data: recentImgData },
         { data: recentCapData },
         { data: allImgData },
@@ -121,28 +121,52 @@ export default function AdminPage() {
         supabase.from('images').select('*', { count: 'exact', head: true }),
         supabase.from('captions').select('*', { count: 'exact', head: true }),
         supabase.from('humor_flavors').select('*', { count: 'exact', head: true }),
-        supabase.from('images').select('id, url, created_datetime_utc').order('created_datetime_utc', { ascending: false }).limit(5),
-        supabase.from('captions').select('id, content, created_datetime_utc').order('created_datetime_utc', { ascending: false }).limit(5),
-        supabase.from('images').select('id, url, created_datetime_utc'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_in_study', true),
+        supabase.from('images').select('id, url, created_datetime_utc').order('created_datetime_utc', { ascending: false }).limit(6),
+        supabase.from('captions').select('id, content, image_id, created_datetime_utc').order('created_datetime_utc', { ascending: false }).limit(6),
+        supabase.from('images').select('id, url, created_datetime_utc').order('created_datetime_utc', { ascending: false }),
       ])
 
       setProfiles(profileData ?? [])
       setTotalImages(imgCount ?? 0)
       setTotalCaptions(capCount ?? 0)
       setTotalFlavors(flavorCount ?? 0)
+      setStudyCount(studyC ?? 0)
       setRecentImages((recentImgData ?? []) as ImageRow[])
       setRecentCaptions((recentCapData ?? []) as CaptionRow[])
+      setAllImages((allImgData ?? []) as ImageRow[])
 
-      const imgs = (allImgData ?? []) as ImageRow[]
-      if (imgs.length) setSpotlightImage(imgs[Math.floor(Math.random() * imgs.length)])
+      // fetch caption counts for recent images
+      const ids = (recentImgData ?? []).map((r: { id: string }) => r.id)
+      if (ids.length > 0) {
+        const { data: capCounts } = await supabase
+          .from('captions')
+          .select('image_id')
+          .in('image_id', ids)
+        const map: Record<string, number> = {}
+        for (const c of capCounts ?? []) {
+          map[c.image_id] = (map[c.image_id] ?? 0) + 1
+        }
+        setCaptionsByImage(map)
+      }
 
       setLoading(false)
     }
     load()
   }, [])
 
-  const userGrowthData = groupByDay(profiles, 30)
-  const newUsersToday  = userGrowthData.at(-1)?.value ?? 0
+  const userGrowthData  = groupByDay(profiles, 30)
+  const imageUploadData = groupByDay(allImages, 30)
+
+  const now7  = allImages.filter(i => Date.now() - new Date(i.created_datetime_utc).getTime() < 7 * 86400000).length
+  const prev7 = allImages.filter(i => {
+    const age = Date.now() - new Date(i.created_datetime_utc).getTime()
+    return age >= 7 * 86400000 && age < 14 * 86400000
+  }).length
+  const imgTrend = pct(now7, prev7)
+
+  const newUsersToday = userGrowthData.at(-1)?.value ?? 0
+  const avgCaptions   = totalImages > 0 ? (totalCaptions / totalImages).toFixed(1) : '—'
 
   return (
     <div style={s.page}>
@@ -152,98 +176,89 @@ export default function AdminPage() {
         <p style={s.eyebrow}>{today}</p>
         <h1 style={s.heading}><em>Overview.</em></h1>
       </div>
-
-      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 24 }} />
+      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 28 }} />
 
       {loading ? (
-        <p style={{ padding: '0 48px', fontSize: 12, color: '#999' }}>Loading…</p>
+        <p style={{ padding: '0 32px', fontSize: 12, color: '#999' }}>Loading…</p>
       ) : (
         <div style={s.body}>
 
-          {/* Stats row */}
+          {/* Stat cards */}
           <div style={s.statsGrid}>
-            {[
-              { label: 'Users',    value: profiles.length, note: newUsersToday > 0 ? `+${newUsersToday} today` : undefined },
-              { label: 'Images',   value: totalImages },
-              { label: 'Captions', value: totalCaptions },
-              { label: 'Flavors',  value: totalFlavors },
-            ].map(({ label, value, note }) => (
-              <Card key={label} style={{ padding: '18px 22px' }}>
-                <p style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#888', margin: '0 0 8px' }}>{label}</p>
-                <p style={{ fontSize: 40, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: '#1a1a1a', margin: 0, lineHeight: 1 }}>{value}</p>
-                {note && <p style={{ fontSize: 10, color: '#BDE081', margin: '6px 0 0' }}>{note}</p>}
-              </Card>
+            {([
+              { label: 'Users',              value: profiles.length,  note: newUsersToday > 0 ? `+${newUsersToday} today` : undefined },
+              { label: 'Images',             value: totalImages,      note: imgTrend !== null ? `${imgTrend > 0 ? '+' : ''}${imgTrend}% vs prev week` : undefined },
+              { label: 'Captions',           value: totalCaptions,    note: `${avgCaptions} per image avg` },
+              { label: 'Flavors',            value: totalFlavors,     note: undefined },
+              { label: 'Study participants', value: studyCount,       note: undefined },
+            ] as { label: string; value: number; note?: string }[]).map(({ label, value, note }) => (
+              <div key={label} style={s.statCard}>
+                <p style={s.statLabel}>{label}</p>
+                <p style={s.statValue}>{value}</p>
+                {note && <p style={s.statNote}>{note}</p>}
+              </div>
             ))}
           </div>
 
-          {/* Chart + Spotlight */}
-          <div style={s.mainRow}>
-            <div style={{ flex: '1 1 0', minWidth: 0 }}>
-              <Label>User growth — last 30 days</Label>
-              <Card style={{ padding: '18px 16px 12px' }}>
-                <LineChart data={userGrowthData} />
-              </Card>
+          {/* Charts */}
+          <div style={s.chartRow}>
+            <div style={s.chartBox}>
+              <p style={s.sectionLabel}>User growth — 30 days</p>
+              <LineChart data={userGrowthData} color="#BDE081" />
             </div>
-
-            <div style={{ width: 220, flexShrink: 0 }}>
-              <Label>Image spotlight</Label>
-              {spotlightImage ? (
-                <Card style={{ overflow: 'hidden' }}>
-                  <div style={{ aspectRatio: '1', overflow: 'hidden', backgroundColor: '#f5f5f5' }}>
-                    <img src={spotlightImage.url} alt="spotlight" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                  <div style={{ padding: '10px 12px' }}>
-                    <p style={{ fontSize: 10, color: '#888', margin: 0 }}>Uploaded {timeAgo(spotlightImage.created_datetime_utc)}</p>
-                  </div>
-                </Card>
-              ) : (
-                <Card style={{ padding: 20, textAlign: 'center' }}>
-                  <p style={{ fontSize: 12, color: '#999', margin: 0 }}>No images yet</p>
-                </Card>
-              )}
+            <div style={s.chartBox}>
+              <p style={s.sectionLabel}>Image uploads — 30 days</p>
+              <LineChart data={imageUploadData} color="#a5c8f0" />
             </div>
           </div>
 
-          {/* Recent activity */}
+          {/* Activity */}
           <div style={s.activityRow}>
+
+            {/* Recent uploads */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <Label>Recent uploads</Label>
-              <Card>
+              <p style={s.sectionLabel}>Recent uploads</p>
+              <div style={s.listCard}>
                 {recentImages.length === 0 ? (
-                  <p style={{ padding: '14px 16px', fontSize: 12, color: '#999', margin: 0 }}>No images yet.</p>
+                  <p style={s.empty}>No images yet.</p>
                 ) : recentImages.map((img, i) => (
-                  <div key={img.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: i < recentImages.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
-                    <div style={{ width: 32, height: 32, flexShrink: 0, overflow: 'hidden', backgroundColor: '#f5f5f5' }}>
-                      <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div key={img.id} style={{ ...s.listRow, borderBottom: i < recentImages.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                    <div style={{ width: 36, height: 36, flexShrink: 0, overflow: 'hidden', backgroundColor: '#f0f0f0' }}>
+                      <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     </div>
-                    <p style={{ flex: 1, fontSize: 12, color: '#444', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {img.url.split('/').pop()}
-                    </p>
-                    <span style={{ fontSize: 10, color: '#999', flexShrink: 0 }}>{timeAgo(img.created_datetime_utc)}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 11, color: '#555', margin: '0 0 2px' }}>
+                        {captionsByImage[img.id] !== undefined
+                          ? `${captionsByImage[img.id]} caption${captionsByImage[img.id] !== 1 ? 's' : ''} generated`
+                          : 'Pending captions'}
+                      </p>
+                      <p style={{ fontSize: 10, color: '#bbb', margin: 0 }}>{timeAgo(img.created_datetime_utc)}</p>
+                    </div>
                   </div>
                 ))}
-              </Card>
+              </div>
             </div>
 
+            {/* Recent captions */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <Label>Recent captions</Label>
-              <Card>
+              <p style={s.sectionLabel}>Recent captions</p>
+              <div style={s.listCard}>
                 {recentCaptions.length === 0 ? (
-                  <p style={{ padding: '14px 16px', fontSize: 12, color: '#999', margin: 0 }}>No captions yet.</p>
+                  <p style={s.empty}>No captions yet.</p>
                 ) : recentCaptions.map((cap, i) => (
-                  <div key={cap.id} style={{ padding: '11px 14px', borderBottom: i < recentCaptions.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
-                    <p style={{ fontSize: 12, color: '#444', margin: '0 0 5px', lineHeight: 1.5 }}>
-                      {cap.content
-                        ? String(cap.content).length > 100 ? String(cap.content).slice(0, 100) + '…' : cap.content
-                        : <span style={{ color: '#999' }}>—</span>}
-                    </p>
-                    <span style={{ fontSize: 10, color: '#999' }}>{timeAgo(cap.created_datetime_utc)}</span>
+                  <div key={cap.id} style={{ ...s.listRow, borderBottom: i < recentCaptions.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 11, color: '#444', margin: '0 0 3px', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {cap.content || <span style={{ color: '#bbb' }}>—</span>}
+                      </p>
+                      <p style={{ fontSize: 10, color: '#bbb', margin: 0 }}>{timeAgo(cap.created_datetime_utc)}</p>
+                    </div>
                   </div>
                 ))}
-              </Card>
+              </div>
             </div>
-          </div>
 
+          </div>
         </div>
       )}
 
@@ -258,12 +273,21 @@ export default function AdminPage() {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page:        { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
-  header:      { padding: '32px 32px 20px' },
-  eyebrow:     { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' },
-  heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
-  body:        { padding: '0 32px 48px', display: 'flex', flexDirection: 'column', gap: 28 },
-  statsGrid:   { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 },
-  mainRow:     { display: 'flex', gap: 16, alignItems: 'flex-start' },
-  activityRow: { display: 'flex', gap: 16 },
+  page:         { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
+  header:       { padding: '32px 32px 20px' },
+  eyebrow:      { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' },
+  heading:      { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
+  body:         { padding: '0 32px 48px', display: 'flex', flexDirection: 'column', gap: 32 },
+  statsGrid:    { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 },
+  statCard:     { padding: '18px 20px', border: '1px solid #ebebeb', backgroundColor: '#fff' },
+  statLabel:    { fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#aaa', margin: '0 0 10px' },
+  statValue:    { fontSize: 36, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: '#1a1a1a', margin: 0, lineHeight: 1 },
+  statNote:     { fontSize: 10, color: '#bbb', margin: '7px 0 0' },
+  chartRow:     { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 },
+  chartBox:     { border: '1px solid #ebebeb', padding: '16px 16px 10px' },
+  sectionLabel: { fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#aaa', margin: '0 0 14px' },
+  activityRow:  { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 },
+  listCard:     { border: '1px solid #ebebeb' },
+  listRow:      { display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px' },
+  empty:        { padding: '16px 14px', fontSize: 12, color: '#bbb', margin: 0 },
 }
