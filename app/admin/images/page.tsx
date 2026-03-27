@@ -335,7 +335,7 @@ const s: Record<string, React.CSSProperties> = {
   overlayBtn:   { fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '8px 16px', backgroundColor: 'rgba(255,255,255,0.92)', color: '#1a1a1a', border: 'none', cursor: 'pointer', borderRadius: 2 },
   badge:        { position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 10 },
   editForm:     { padding: '10px 12px', borderBottom: '1px solid #f0f0f0', backgroundColor: '#fafafa' },
-  captionBlock: { padding: '10px 12px', minHeight: 72, display: 'flex', flexDirection: 'column', justifyContent: 'center' },
+  captionBlock: { padding: '8px 10px', minHeight: 60, display: 'flex', flexDirection: 'column', justifyContent: 'center' },
   arrowBtn:     { fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: '1px 0', lineHeight: 1 },
   actionBtn:    { fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '7px 10px', background: '#f5f5f5', color: '#555', border: '1px solid #e0e0e0', cursor: 'pointer', borderRadius: 2 },
   input:        { fontSize: 12, padding: '7px 10px', border: '1px solid #e0e0e0', outline: 'none', width: '100%', boxSizing: 'border-box', borderRadius: 2 },

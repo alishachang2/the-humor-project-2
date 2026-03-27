@@ -188,10 +188,17 @@ function ReadSection({ title, table }: { title: string; table: string }) {
   )
 }
 
-// ─── captions section (expandable, with flavor label) ────────────────────────
+// ─── captions section (grouped by image, with thumbnails) ────────────────────
+
+type CaptionGroup = {
+  imageId: string
+  imageUrl: string
+  captions: Row[]
+}
 
 function CaptionsSection() {
-  const [rows, setRows]           = useState<Row[]>([])
+  const [groups, setGroups]       = useState<CaptionGroup[]>([])
+  const [totalCaptions, setTotal] = useState(0)
   const [flavorMap, setFlavorMap] = useState<Record<string, string>>({})
   const [expanded, setExpanded]   = useState<Set<string>>(new Set())
 
@@ -202,10 +209,37 @@ function CaptionsSection() {
         supabase.from('captions').select('*').order('created_datetime_utc', { ascending: false }),
         supabase.from('humor_flavors').select('id, slug, name'),
       ])
-      setRows(captions ?? [])
+
+      const allCaptions = captions ?? []
+      setTotal(allCaptions.length)
+
       const map: Record<string, string> = {}
       for (const f of flavors ?? []) map[String(f.id)] = String(f.slug ?? f.name ?? f.id)
       setFlavorMap(map)
+
+      const imageIds = [...new Set(allCaptions.map(c => String(c.image_id)).filter(Boolean))]
+      if (!imageIds.length) { setGroups([]); return }
+
+      const { data: images } = await supabase
+        .from('images')
+        .select('id, url')
+        .in('id', imageIds)
+
+      const urlMap: Record<string, string> = {}
+      for (const img of images ?? []) urlMap[String(img.id)] = String(img.url)
+
+      const byImage: Record<string, Row[]> = {}
+      for (const c of allCaptions) {
+        const iid = String(c.image_id)
+        if (!byImage[iid]) byImage[iid] = []
+        byImage[iid].push(c)
+      }
+
+      setGroups(imageIds.map(iid => ({
+        imageId:  iid,
+        imageUrl: urlMap[iid] ?? '',
+        captions: byImage[iid] ?? [],
+      })))
     }
     load()
   }, [])
@@ -218,43 +252,68 @@ function CaptionsSection() {
     })
   }
 
-  const metaKeys = rows.length ? Object.keys(rows[0]).filter(k => k !== 'content') : []
-
   return (
-    <Section title="Captions" count={rows.length}>
-      {!rows.length ? <p style={s.empty}>No records.</p> : (
+    <Section title="Captions" count={totalCaptions}>
+      {!groups.length ? <p style={s.empty}>No records.</p> : (
         <div style={{ border: '1px solid #eee' }}>
-          {rows.map((row, i) => {
-            const id = String(row.id)
-            const isOpen = expanded.has(id)
-            const flavorSlug = row.humor_flavor_id ? flavorMap[String(row.humor_flavor_id)] : null
+          {groups.map((group, gi) => {
+            const isOpen = expanded.has(group.imageId)
             return (
-              <div key={id} style={{ borderBottom: i < rows.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+              <div key={group.imageId} style={{ borderBottom: gi < groups.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+                {/* Image row header */}
                 <button
                   type="button"
-                  onClick={() => toggle(id)}
-                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '11px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
+                  onClick={() => toggle(group.imageId)}
+                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
                 >
-                  <span style={{ fontSize: 9, color: '#999', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
-                  <span style={{ fontSize: 12, color: '#333', lineHeight: 1.45, flex: 1 }}>
-                    {row.content
-                      ? String(row.content).length > 110 ? String(row.content).slice(0, 110) + '…' : String(row.content)
-                      : <span style={{ color: '#999' }}>—</span>}
-                  </span>
-                  {flavorSlug && (
-                    <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#aaa', border: '1px solid #eee', padding: '2px 7px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                      {flavorSlug}
-                    </span>
+                  <span style={{ fontSize: 9, color: '#ccc', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                  {group.imageUrl ? (
+                    <div style={{ width: 40, height: 40, flexShrink: 0, overflow: 'hidden', backgroundColor: '#f0f0f0' }}>
+                      <img src={group.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    </div>
+                  ) : (
+                    <div style={{ width: 40, height: 40, flexShrink: 0, backgroundColor: '#f5f5f5' }} />
                   )}
+                  <span style={{ fontSize: 12, color: '#444', flex: 1, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                    {group.captions[0]?.content
+                      ? String(group.captions[0].content).slice(0, 90) + (String(group.captions[0].content).length > 90 ? '…' : '')
+                      : <span style={{ color: '#bbb' }}>No caption text</span>}
+                  </span>
+                  <span style={{ fontSize: 10, color: '#bbb', flexShrink: 0 }}>
+                    {group.captions.length} caption{group.captions.length !== 1 ? 's' : ''}
+                  </span>
                 </button>
+
+                {/* Expanded: all captions for this image */}
                 {isOpen && (
-                  <div style={{ padding: '4px 14px 14px 33px', display: 'flex', flexDirection: 'column', gap: 5, borderTop: '1px solid #f9f9f9', backgroundColor: '#fafafa' }}>
-                    {metaKeys.map(k => (
-                      <div key={k} style={{ display: 'flex', gap: 12 }}>
-                        <span style={{ fontSize: 9, color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase', width: 160, flexShrink: 0, paddingTop: 2 }}>{k}</span>
-                        <span style={{ fontSize: 11, color: '#555', wordBreak: 'break-all' }}>{String(row[k] ?? '—')}</span>
-                      </div>
-                    ))}
+                  <div style={{ borderTop: '1px solid #f5f5f5', backgroundColor: '#fafafa' }}>
+                    {group.captions.map((cap, ci) => {
+                      const flavorSlug = cap.humor_flavor_id ? flavorMap[String(cap.humor_flavor_id)] : null
+                      return (
+                        <div key={String(cap.id)} style={{ padding: '12px 14px 12px 68px', borderBottom: ci < group.captions.length - 1 ? '1px solid #efefef' : 'none' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                            <p style={{ fontSize: 12, color: '#333', lineHeight: 1.6, margin: 0, flex: 1 }}>
+                              {String(cap.content ?? '—')}
+                            </p>
+                            {flavorSlug && (
+                              <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#aaa', border: '1px solid #e8e8e8', padding: '2px 7px', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2 }}>
+                                {flavorSlug}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px' }}>
+                            {Object.entries(cap)
+                              .filter(([k]) => !['id', 'content', 'image_id', 'humor_flavor_id'].includes(k))
+                              .map(([k, v]) => (
+                                <span key={k} style={{ fontSize: 10, color: '#bbb' }}>
+                                  <span style={{ letterSpacing: '0.08em', textTransform: 'uppercase', marginRight: 4 }}>{k}</span>
+                                  <span style={{ color: '#888' }}>{String(v ?? '—').slice(0, 60)}</span>
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -327,7 +386,7 @@ function HumorFlavorsSection() {
         {loadingSteps && <p style={s.empty}>Loading steps…</p>}
         {!loadingSteps && steps.length === 0 && <p style={s.empty}>No steps for this flavor.</p>}
         {!loadingSteps && steps.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 320px)', display: 'flex', flexDirection: 'column' }}>
             {steps.map((step, si) => {
               const sid = String(step.id)
               const isOpen = expandedSteps.has(sid)
@@ -402,6 +461,7 @@ function HumorFlavorsSection() {
   return (
     <Section title="Humor Flavors" count={flavors.length}>
       {loadingFlavors ? <p style={s.empty}>Loading…</p> : flavors.length === 0 ? <p style={s.empty}>No flavors.</p> : (
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 320px)' }}>
         <div style={s.flavorGrid}>
           {flavors.map(flavor => (
             <button
@@ -420,6 +480,7 @@ function HumorFlavorsSection() {
               <span style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#aaa' }}>View steps →</span>
             </button>
           ))}
+        </div>
         </div>
       )}
     </Section>
