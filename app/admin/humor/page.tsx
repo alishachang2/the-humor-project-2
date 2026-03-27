@@ -50,12 +50,17 @@ export default function HumorPage() {
     setSelected(flavor)
     setLoadingSteps(true)
     const supabase = createClient()
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('humor_flavor_steps')
       .select('*')
       .eq('flavor_id', flavor.id)
-      .order('order', { ascending: true })
-    setSteps(data ?? [])
+    if (error) console.error('humor_flavor_steps:', error)
+    const sorted = (data ?? []).sort((a, b) => {
+      const aO = Number(a.order ?? a.step_order ?? 0)
+      const bO = Number(b.order ?? b.step_order ?? 0)
+      return aO - bO
+    })
+    setSteps(sorted)
     setLoadingSteps(false)
   }
 

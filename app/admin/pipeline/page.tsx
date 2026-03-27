@@ -265,10 +265,15 @@ function HumorFlavorsSection() {
       const supabase = createClient()
       const [{ data: fData }, { data: sData }] = await Promise.all([
         supabase.from('humor_flavors').select('*').order('created_datetime_utc', { ascending: true }),
-        supabase.from('humor_flavor_steps').select('*').order('order', { ascending: true }),
+        supabase.from('humor_flavor_steps').select('*'),
       ])
       setFlavors(fData ?? [])
-      setSteps(sData ?? [])
+      const sorted = (sData ?? []).sort((a, b) => {
+        const aO = Number(a.order ?? a.step_order ?? 0)
+        const bO = Number(b.order ?? b.step_order ?? 0)
+        return aO - bO
+      })
+      setSteps(sorted)
     }
     load()
   }, [])
