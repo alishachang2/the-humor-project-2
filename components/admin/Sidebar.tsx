@@ -7,7 +7,6 @@ import {
   Image,
   Smile,
   Zap,
-  Settings,
 } from 'lucide-react'
 
 const menuItems = [
@@ -16,7 +15,6 @@ const menuItems = [
   { icon: Image,           label: 'Images',    id: 'images',    href: '/admin/images' },
   { icon: Smile,           label: 'Humor',     id: 'humor',     href: '/admin/humor' },
   { icon: Zap,             label: 'Pipeline',  id: 'pipeline',  href: '/admin/pipeline' },
-  { icon: Settings,        label: 'Settings',  id: 'settings',  href: '/admin/settings' },
 ]
 
 export function Sidebar() {

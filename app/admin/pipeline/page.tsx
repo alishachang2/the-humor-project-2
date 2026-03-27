@@ -15,7 +15,7 @@ const TABS = [
 
 type TabId = typeof TABS[number]['id']
 
-// ─── generic table helpers ───────────────────────────────────────────────────
+// ─── generic table ────────────────────────────────────────────────────────────
 
 function Table({ rows, onEdit, onDelete }: {
   rows: Row[]
@@ -30,22 +30,20 @@ function Table({ rows, onEdit, onDelete }: {
         <thead>
           <tr>
             {cols.map(c => <th key={c} style={s.th}>{c}</th>)}
-            {(onEdit || onDelete) && <th style={s.th}>Actions</th>}
+            {(onEdit || onDelete) && <th style={s.th}>—</th>}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} style={i % 2 === 0 ? {} : { backgroundColor: '#fafafa' }}>
+            <tr key={i} style={{ backgroundColor: i % 2 ? '#fafafa' : '#fff' }}>
               {cols.map(c => (
-                <td key={c} style={s.td}>
-                  {String(row[c] ?? '—').slice(0, 80)}
-                </td>
+                <td key={c} style={s.td}>{String(row[c] ?? '—').slice(0, 80)}</td>
               ))}
               {(onEdit || onDelete) && (
-                <td style={s.td}>
+                <td style={{ ...s.td, whiteSpace: 'nowrap' }}>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    {onEdit && <button type="button" onClick={() => onEdit(row)} style={s.actionBtn}>Edit</button>}
-                    {onDelete && <button type="button" onClick={() => onDelete(row)} style={{ ...s.actionBtn, color: '#d94f3a', borderColor: '#f0cdc8' }}>Delete</button>}
+                    {onEdit   && <button type="button" onClick={() => onEdit(row)}   style={s.rowBtn}>Edit</button>}
+                    {onDelete && <button type="button" onClick={() => onDelete(row)} style={{ ...s.rowBtn, color: '#c0392b', borderColor: '#f5c6c0' }}>Delete</button>}
                   </div>
                 </td>
               )}
@@ -57,17 +55,39 @@ function Table({ rows, onEdit, onDelete }: {
   )
 }
 
-// ─── simple CRUD section ─────────────────────────────────────────────────────
+// ─── section wrapper ──────────────────────────────────────────────────────────
+
+function Section({ title, count, action, children }: {
+  title: string
+  count?: number
+  action?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+          <p style={s.sectionTitle}>{title}</p>
+          {count !== undefined && <span style={s.count}>{count}</span>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+// ─── CRUD section ─────────────────────────────────────────────────────────────
 
 function CrudSection({ title, table, fields }: {
   title: string
   table: string
   fields: { key: string; label: string; multiline?: boolean }[]
 }) {
-  const [rows, setRows] = useState<Row[]>([])
+  const [rows, setRows]       = useState<Row[]>([])
   const [editing, setEditing] = useState<Row | null>(null)
-  const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState<Row>({})
+  const [adding, setAdding]   = useState(false)
+  const [form, setForm]       = useState<Row>({})
 
   async function load() {
     const supabase = createClient()
@@ -84,9 +104,7 @@ function CrudSection({ title, table, fields }: {
     } else {
       await supabase.from(table).insert(form)
     }
-    setEditing(null)
-    setAdding(false)
-    setForm({})
+    setEditing(null); setAdding(false); setForm({})
     load()
   }
 
@@ -97,78 +115,134 @@ function CrudSection({ title, table, fields }: {
   }
 
   function startEdit(row: Row) {
-    setEditing(row)
-    setAdding(false)
+    setEditing(row); setAdding(false)
     setForm(Object.fromEntries(fields.map(f => [f.key, row[f.key] ?? ''])))
   }
 
   function startAdd() {
-    setAdding(true)
-    setEditing(null)
-    setForm({})
+    setAdding(true); setEditing(null); setForm({})
   }
 
   return (
-    <div style={s.section}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <p style={s.sectionTitle}>{title}</p>
-        <button type="button" onClick={startAdd} style={s.addBtn}>+ Add</button>
-      </div>
-
+    <Section
+      title={title}
+      count={rows.length}
+      action={<button type="button" onClick={startAdd} style={s.addBtn}>+ Add</button>}
+    >
       {(adding || editing) && (
         <div style={s.formBox}>
+          <p style={s.formTitle}>{editing ? 'Edit record' : 'New record'}</p>
           {fields.map(f => (
-            <div key={f.key} style={{ marginBottom: 10 }}>
+            <div key={f.key} style={{ marginBottom: 12 }}>
               <label style={s.label}>{f.label}</label>
               {f.multiline
-                ? <textarea value={String(form[f.key] ?? '')} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} style={{ ...s.input, height: 72, resize: 'vertical' }} />
-                : <input value={String(form[f.key] ?? '')} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} style={s.input} />
+                ? <textarea value={String(form[f.key] ?? '')} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} style={{ ...s.input, height: 80, resize: 'vertical' }} />
+                : <input   value={String(form[f.key] ?? '')} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} style={s.input} />
               }
             </div>
           ))}
           <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" onClick={save} style={{ ...s.btn, background: '#1a1a1a', color: '#fff', border: '1px solid #1a1a1a' }}>Save</button>
-            <button type="button" onClick={() => { setEditing(null); setAdding(false) }} style={s.btn}>Cancel</button>
+            <button type="button" onClick={save} style={s.saveBtn}>Save</button>
+            <button type="button" onClick={() => { setEditing(null); setAdding(false) }} style={s.cancelBtn}>Cancel</button>
           </div>
         </div>
       )}
-
       <Table rows={rows} onEdit={startEdit} onDelete={remove} />
-    </div>
+    </Section>
   )
 }
 
-// ─── read-only section ────────────────────────────────────────────────────────
+// ─── read section ─────────────────────────────────────────────────────────────
 
-function ReadSection({ title, table, filter }: { title: string; table: string; filter?: Record<string, string> }) {
+function ReadSection({ title, table }: { title: string; table: string }) {
   const [rows, setRows] = useState<Row[]>([])
 
   useEffect(() => {
     async function load() {
       const supabase = createClient()
-      let q = supabase.from(table).select('*').order('created_datetime_utc', { ascending: false })
-      if (filter) {
-        Object.entries(filter).forEach(([k, v]) => { q = q.eq(k, v) })
-      }
-      const { data } = await q
+      const { data } = await supabase.from(table).select('*').order('created_datetime_utc', { ascending: false })
       setRows(data ?? [])
     }
     load()
   }, [])
 
   return (
-    <div style={s.section}>
-      <p style={{ ...s.sectionTitle, marginBottom: 16 }}>{title}</p>
+    <Section title={title} count={rows.length}>
       <Table rows={rows} />
-    </div>
+    </Section>
   )
 }
 
-// ─── humor mix (read + update caption_count) ─────────────────────────────────
+// ─── captions section (expandable) ───────────────────────────────────────────
+
+function CaptionsSection() {
+  const [rows, setRows]         = useState<Row[]>([])
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data } = await supabase.from('captions').select('*').order('created_datetime_utc', { ascending: false })
+      setRows(data ?? [])
+    }
+    load()
+  }, [])
+
+  function toggle(id: string) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const metaKeys = rows.length ? Object.keys(rows[0]).filter(k => k !== 'content') : []
+
+  return (
+    <Section title="Captions" count={rows.length}>
+      {!rows.length ? <p style={s.empty}>No records.</p> : (
+        <div style={{ border: '1px solid #eee' }}>
+          {rows.map((row, i) => {
+            const id = String(row.id)
+            const isOpen = expanded.has(id)
+            return (
+              <div key={id} style={{ borderBottom: i < rows.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                <button
+                  type="button"
+                  onClick={() => toggle(id)}
+                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '11px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
+                >
+                  <span style={{ fontSize: 9, color: '#ccc', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                  <span style={{ fontSize: 12, color: '#333', lineHeight: 1.45, flex: 1 }}>
+                    {row.content
+                      ? String(row.content).length > 110 ? String(row.content).slice(0, 110) + '…' : String(row.content)
+                      : <span style={{ color: '#ccc' }}>—</span>}
+                  </span>
+                </button>
+                {isOpen && (
+                  <div style={{ padding: '4px 14px 14px 33px', display: 'flex', flexDirection: 'column', gap: 5, borderTop: '1px solid #f9f9f9', backgroundColor: '#fafafa' }}>
+                    {metaKeys.map(k => (
+                      <div key={k} style={{ display: 'flex', gap: 12 }}>
+                        <span style={{ fontSize: 9, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase', width: 160, flexShrink: 0, paddingTop: 2 }}>{k}</span>
+                        <span style={{ fontSize: 11, color: '#555', wordBreak: 'break-all' }}>{String(row[k] ?? '—')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Section>
+  )
+}
+
+// ─── humor mix ────────────────────────────────────────────────────────────────
 
 function HumorMixSection() {
-  const [rows, setRows] = useState<Row[]>([])
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [rows, setRows]             = useState<Row[]>([])
+  const [editingId, setEditingId]   = useState<string | null>(null)
   const [captionCount, setCaptionCount] = useState('')
 
   async function load() {
@@ -186,45 +260,46 @@ function HumorMixSection() {
     load()
   }
 
-  if (!rows.length) return <div style={s.section}><p style={s.sectionTitle}>Humor Mix</p><p style={s.empty}>No records.</p></div>
-
   return (
-    <div style={s.section}>
-      <p style={{ ...s.sectionTitle, marginBottom: 16 }}>Humor Mix</p>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={s.table}>
-          <thead>
-            <tr>
-              {Object.keys(rows[0]).map(c => <th key={c} style={s.th}>{c}</th>)}
-              <th style={s.th}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => (
-              <tr key={i} style={i % 2 === 0 ? {} : { backgroundColor: '#fafafa' }}>
-                {Object.keys(rows[0]).map(c => (
-                  <td key={c} style={s.td}>
-                    {c === 'caption_count' && editingId === String(row.id) ? (
-                      <input type="number" value={captionCount} onChange={e => setCaptionCount(e.target.value)} style={{ ...s.input, width: 64 }} />
-                    ) : String(row[c] ?? '—').slice(0, 80)}
-                  </td>
-                ))}
-                <td style={s.td}>
-                  {editingId === String(row.id) ? (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button type="button" onClick={() => saveCount(String(row.id))} style={{ ...s.actionBtn, background: '#1a1a1a', color: '#fff', borderColor: '#1a1a1a' }}>Save</button>
-                      <button type="button" onClick={() => setEditingId(null)} style={s.actionBtn}>Cancel</button>
-                    </div>
-                  ) : (
-                    <button type="button" onClick={() => { setEditingId(String(row.id)); setCaptionCount(String(row.caption_count ?? '')) }} style={s.actionBtn}>Edit count</button>
-                  )}
-                </td>
+    <Section title="Humor Mix" count={rows.length}>
+      {!rows.length ? <p style={s.empty}>No records.</p> : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={s.table}>
+            <thead>
+              <tr>
+                {Object.keys(rows[0]).map(c => <th key={c} style={s.th}>{c}</th>)}
+                <th style={s.th}>—</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <tr key={i} style={{ backgroundColor: i % 2 ? '#fafafa' : '#fff' }}>
+                  {Object.keys(rows[0]).map(c => (
+                    <td key={c} style={s.td}>
+                      {c === 'caption_count' && editingId === String(row.id)
+                        ? <input type="number" value={captionCount} onChange={e => setCaptionCount(e.target.value)} style={{ ...s.input, width: 60 }} />
+                        : String(row[c] ?? '—').slice(0, 80)}
+                    </td>
+                  ))}
+                  <td style={{ ...s.td, whiteSpace: 'nowrap' }}>
+                    {editingId === String(row.id) ? (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button type="button" onClick={() => saveCount(String(row.id))} style={s.saveBtn}>Save</button>
+                        <button type="button" onClick={() => setEditingId(null)} style={s.cancelBtn}>Cancel</button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => { setEditingId(String(row.id)); setCaptionCount(String(row.caption_count ?? '')) }} style={s.rowBtn}>
+                        Edit count
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Section>
   )
 }
 
@@ -238,15 +313,12 @@ export default function PipelinePage() {
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
 
       <div style={s.header}>
-        <div>
-          <p style={s.eyebrow}>Admin</p>
-          <h1 style={s.heading}><em>Pipeline.</em></h1>
-        </div>
+        <p style={s.eyebrow}>Admin</p>
+        <h1 style={s.heading}><em>Pipeline.</em></h1>
       </div>
 
-      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 0 }} />
+      <div style={{ height: 2, backgroundColor: '#BDE081' }} />
 
-      {/* Tab bar */}
       <div style={s.tabBar}>
         {TABS.map(t => (
           <button
@@ -255,7 +327,7 @@ export default function PipelinePage() {
             onClick={() => setTab(t.id)}
             style={{
               ...s.tabBtn,
-              color: tab === t.id ? '#1a1a1a' : '#999',
+              color: tab === t.id ? '#1a1a1a' : '#aaa',
               borderBottom: tab === t.id ? '2px solid #1a1a1a' : '2px solid transparent',
             }}
           >
@@ -265,21 +337,22 @@ export default function PipelinePage() {
       </div>
 
       <div style={s.content}>
-
-        {/* ── Humor ── */}
         {tab === 'humor' && (
           <>
             <ReadSection title="Humor Flavors" table="humor_flavors" />
+            <hr style={s.divider} />
             <ReadSection title="Humor Flavor Steps" table="humor_flavor_steps" />
+            <hr style={s.divider} />
             <HumorMixSection />
           </>
         )}
 
-        {/* ── Captions ── */}
         {tab === 'captions' && (
           <>
-            <ReadSection title="Captions" table="captions" />
+            <CaptionsSection />
+            <hr style={s.divider} />
             <ReadSection title="Caption Requests" table="caption_requests" />
+            <hr style={s.divider} />
             <CrudSection
               title="Caption Examples"
               table="caption_examples"
@@ -292,7 +365,6 @@ export default function PipelinePage() {
           </>
         )}
 
-        {/* ── LLM ── */}
         {tab === 'llm' && (
           <>
             <CrudSection
@@ -303,6 +375,7 @@ export default function PipelinePage() {
                 { key: 'base_url', label: 'Base URL' },
               ]}
             />
+            <hr style={s.divider} />
             <CrudSection
               title="LLM Models"
               table="llm_models"
@@ -312,12 +385,13 @@ export default function PipelinePage() {
                 { key: 'model_id', label: 'Model ID' },
               ]}
             />
+            <hr style={s.divider} />
             <ReadSection title="LLM Prompt Chains" table="llm_prompt_chains" />
+            <hr style={s.divider} />
             <ReadSection title="LLM Model Responses" table="llm_model_responses" />
           </>
         )}
 
-        {/* ── Terms ── */}
         {tab === 'terms' && (
           <CrudSection
             title="Terms"
@@ -329,7 +403,6 @@ export default function PipelinePage() {
           />
         )}
 
-        {/* ── Access ── */}
         {tab === 'access' && (
           <>
             <CrudSection
@@ -337,20 +410,20 @@ export default function PipelinePage() {
               table="allowed_signup_domains"
               fields={[{ key: 'domain', label: 'Domain (e.g. company.com)' }]}
             />
+            <hr style={s.divider} />
             <CrudSection
-              title="Whitelisted Email Addresses"
+              title="Whitelisted Emails"
               table="whitelisted_emails"
               fields={[{ key: 'email', label: 'Email Address' }]}
             />
           </>
         )}
-
       </div>
 
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
@@ -358,56 +431,26 @@ export default function PipelinePage() {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100vh',
-    backgroundColor: '#fff',
-    display: 'flex',
-    flexDirection: 'column',
-    animation: 'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    padding: '40px 48px 24px',
-  },
-  eyebrow: { fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', margin: '0 0 10px' },
-  heading: {
-    fontFamily: "'DM Serif Display', serif",
-    fontSize: 64,
-    fontWeight: 400,
-    lineHeight: 0.9,
-    letterSpacing: '-0.02em',
-    color: '#1a1a1a',
-    margin: 0,
-  },
-  tabBar: {
-    display: 'flex',
-    gap: 0,
-    padding: '0 48px',
-    borderBottom: '1px solid #eee',
-  },
-  tabBtn: {
-    fontSize: 12,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    padding: '14px 20px',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'color 0.15s',
-  },
-  content: { padding: '32px 48px', display: 'flex', flexDirection: 'column', gap: 48 },
-  section: {},
-  sectionTitle: { fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', margin: 0 },
-  empty: { fontSize: 12, color: '#ccc', marginTop: 12 },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 12, marginTop: 12 },
-  th: { textAlign: 'left', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#aaa', padding: '8px 12px', borderBottom: '1px solid #eee' },
-  td: { padding: '10px 12px', borderBottom: '1px solid #f5f5f5', color: '#333', verticalAlign: 'top', maxWidth: 240, wordBreak: 'break-word' },
-  actionBtn: { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '4px 10px', background: '#fafafa', color: '#1a1a1a', border: '1px solid #ddd', cursor: 'pointer' },
-  addBtn: { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '6px 14px', background: '#1a1a1a', color: '#fff', border: 'none', cursor: 'pointer' },
-  formBox: { background: '#fafafa', border: '1px solid #eee', padding: '20px', marginBottom: 16 },
-  label: { display: 'block', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', marginBottom: 6 },
-  input: { width: '100%', fontSize: 12, padding: '8px 10px', border: '1px solid #ddd', outline: 'none', boxSizing: 'border-box' },
-  btn: { fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '8px 16px', background: '#fafafa', color: '#1a1a1a', border: '1px solid #ddd', cursor: 'pointer' },
+  page:        { minHeight: '100vh', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', animation: 'fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards' },
+  header:      { padding: '40px 48px 20px' },
+  eyebrow:     { fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 8px' },
+  heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 56, fontWeight: 400, lineHeight: 0.9, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
+  tabBar:      { display: 'flex', padding: '0 48px', borderBottom: '1px solid #eee' },
+  tabBtn:      { fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '12px 18px', background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.15s' },
+  content:     { padding: '36px 48px 56px', display: 'flex', flexDirection: 'column', gap: 36 },
+  divider:     { border: 'none', borderTop: '1px solid #f0f0f0', margin: 0 },
+  sectionTitle:{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', margin: 0 },
+  count:       { fontSize: 11, color: '#ccc' },
+  empty:       { fontSize: 12, color: '#ccc', marginTop: 10 },
+  table:       { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
+  th:          { textAlign: 'left', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbb', padding: '8px 12px', borderBottom: '1px solid #eee' },
+  td:          { padding: '9px 12px', borderBottom: '1px solid #f5f5f5', color: '#444', verticalAlign: 'top', maxWidth: 240, wordBreak: 'break-word' },
+  rowBtn:      { fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 10px', background: '#fafafa', color: '#555', border: '1px solid #e8e8e8', cursor: 'pointer' },
+  addBtn:      { fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 12px', background: '#1a1a1a', color: '#fff', border: 'none', cursor: 'pointer' },
+  formBox:     { background: '#fafafa', border: '1px solid #eee', padding: '18px 20px', marginBottom: 14 },
+  formTitle:   { fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', margin: '0 0 14px' },
+  label:       { display: 'block', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#bbb', marginBottom: 5 },
+  input:       { width: '100%', fontSize: 12, padding: '7px 10px', border: '1px solid #e0e0e0', outline: 'none', boxSizing: 'border-box', backgroundColor: '#fff' },
+  saveBtn:     { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: '#1a1a1a', color: '#fff', border: '1px solid #1a1a1a', cursor: 'pointer' },
+  cancelBtn:   { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: 'none', color: '#999', border: '1px solid #e0e0e0', cursor: 'pointer' },
 }
