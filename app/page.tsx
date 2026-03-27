@@ -4,13 +4,14 @@ import { createClient } from '@/lib/supabase/client'
 
 const serifFontHref = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap'
 
+const todayLabel = new Date().toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+})
+
 export default function LandingPage() {
   const supabase = createClient()
-  const todayLabel = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
 
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
@@ -49,20 +50,13 @@ export default function LandingPage() {
         <div style={styles.vertRule} />
 
         <section style={styles.right}>
-          <p style={styles.rightEyebrow}>Get started</p>
+          <p style={{ ...styles.eyebrow, margin: '0 0 16px' }}>Get started</p>
 
           <button
             type="button"
             onClick={handleGoogleLogin}
             style={styles.primaryButton}
-            onMouseEnter={event => {
-              event.currentTarget.style.backgroundColor = '#2A2A2A'
-              event.currentTarget.style.color = '#FFFFFF'
-            }}
-            onMouseLeave={event => {
-              event.currentTarget.style.backgroundColor = 'transparent'
-              event.currentTarget.style.color = '#2A2A2A'
-            }}
+            className="primary-btn"
           >
             Login with Google
           </button>
@@ -80,6 +74,10 @@ export default function LandingPage() {
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        .primary-btn:hover {
+          background-color: #2A2A2A !important;
+          color: #FFFFFF !important;
         }
       `}</style>
     </div>
@@ -172,13 +170,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
-  },
-  rightEyebrow: {
-    fontSize: 10,
-    letterSpacing: '0.2em',
-    textTransform: 'uppercase',
-    color: '#8A8A8A',
-    margin: '0 0 16px',
   },
   primaryButton: {
     width: '100%',

@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, DragEvent, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type ImageRecord = {
@@ -28,6 +28,7 @@ export default function ImagesPage() {
   const [editing, setEditing] = useState<string | null>(null)
   const [editUrl, setEditUrl] = useState('')
   const [page, setPage] = useState(0)
+  const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
@@ -94,8 +95,7 @@ export default function ImagesPage() {
     })
   }
 
-  async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? [])
+  async function uploadFiles(files: File[]) {
     if (!files.length) return
 
     setUploading(true)
@@ -123,6 +123,18 @@ export default function ImagesPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
     setPage(0)
     await fetchImages()
+  }
+
+  function handleUpload(event: ChangeEvent<HTMLInputElement>) {
+    uploadFiles(Array.from(event.target.files ?? []))
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    setDragOver(false)
+    if (uploading) return
+    const files = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'))
+    uploadFiles(files)
   }
 
   async function handleDelete(image: ImageRecord) {
@@ -176,17 +188,22 @@ export default function ImagesPage() {
       />
       <div
         onClick={() => !uploading && fileInputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); if (!uploading) setDragOver(true) }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
         style={{
           ...styles.uploadTile,
           cursor: uploading ? 'not-allowed' : 'pointer',
           opacity: uploading ? 0.7 : 1,
+          borderColor: dragOver ? '#2A2A2A' : '#E0E0E0',
+          backgroundColor: dragOver ? '#F5F5F5' : '#FAFAFA',
         }}
       >
         <p style={styles.uploadTitle}>
-          {uploading ? 'Uploading...' : 'Upload your first image'}
+          {uploading ? 'Uploading...' : dragOver ? 'Drop to upload' : 'Upload images'}
         </p>
         <p style={styles.uploadSubtitle}>
-          Click to browse files
+          Click to browse or drag & drop files here
         </p>
       </div>
 
