@@ -188,17 +188,24 @@ function ReadSection({ title, table }: { title: string; table: string }) {
   )
 }
 
-// ─── captions section (expandable) ───────────────────────────────────────────
+// ─── captions section (expandable, with flavor label) ────────────────────────
 
 function CaptionsSection() {
-  const [rows, setRows]         = useState<Row[]>([])
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [rows, setRows]           = useState<Row[]>([])
+  const [flavorMap, setFlavorMap] = useState<Record<string, string>>({})
+  const [expanded, setExpanded]   = useState<Set<string>>(new Set())
 
   useEffect(() => {
     async function load() {
       const supabase = createClient()
-      const { data } = await supabase.from('captions').select('*').order('created_datetime_utc', { ascending: false })
-      setRows(data ?? [])
+      const [{ data: captions }, { data: flavors }] = await Promise.all([
+        supabase.from('captions').select('*').order('created_datetime_utc', { ascending: false }),
+        supabase.from('humor_flavors').select('id, slug, name'),
+      ])
+      setRows(captions ?? [])
+      const map: Record<string, string> = {}
+      for (const f of flavors ?? []) map[String(f.id)] = String(f.slug ?? f.name ?? f.id)
+      setFlavorMap(map)
     }
     load()
   }, [])
@@ -220,6 +227,7 @@ function CaptionsSection() {
           {rows.map((row, i) => {
             const id = String(row.id)
             const isOpen = expanded.has(id)
+            const flavorSlug = row.humor_flavor_id ? flavorMap[String(row.humor_flavor_id)] : null
             return (
               <div key={id} style={{ borderBottom: i < rows.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
                 <button
@@ -233,6 +241,11 @@ function CaptionsSection() {
                       ? String(row.content).length > 110 ? String(row.content).slice(0, 110) + '…' : String(row.content)
                       : <span style={{ color: '#999' }}>—</span>}
                   </span>
+                  {flavorSlug && (
+                    <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#aaa', border: '1px solid #eee', padding: '2px 7px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {flavorSlug}
+                    </span>
+                  )}
                 </button>
                 {isOpen && (
                   <div style={{ padding: '4px 14px 14px 33px', display: 'flex', flexDirection: 'column', gap: 5, borderTop: '1px solid #f9f9f9', backgroundColor: '#fafafa' }}>
@@ -253,118 +266,117 @@ function CaptionsSection() {
   )
 }
 
-// ─── humor flavors + steps (prompt chain view) ───────────────────────────────
+// ─── humor flavors + steps (card grid + drill-down) ──────────────────────────
 
 function HumorFlavorsSection() {
-  const [flavors, setFlavors] = useState<Row[]>([])
-  const [steps, setSteps]     = useState<Row[]>([])
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [flavors, setFlavors]       = useState<Row[]>([])
+  const [selected, setSelected]     = useState<Row | null>(null)
+  const [steps, setSteps]           = useState<Row[]>([])
+  const [loadingFlavors, setLoadingFlavors] = useState(true)
+  const [loadingSteps, setLoadingSteps]     = useState(false)
 
   useEffect(() => {
     async function load() {
       const supabase = createClient()
-      const [{ data: fData }, { data: sData }] = await Promise.all([
-        supabase.from('humor_flavors').select('*').order('created_datetime_utc', { ascending: true }),
-        supabase.from('humor_flavor_steps').select('*'),
-      ])
-      setFlavors(fData ?? [])
-      const sorted = (sData ?? []).sort((a, b) => {
-        const aO = Number(a.humor_flavor_step_type_id ?? 0)
-        const bO = Number(b.humor_flavor_step_type_id ?? 0)
-        return aO - bO
-      })
-      setSteps(sorted)
+      const { data } = await supabase.from('humor_flavors').select('*').order('created_datetime_utc', { ascending: true })
+      setFlavors(data ?? [])
+      setLoadingFlavors(false)
     }
     load()
   }, [])
 
-  function toggle(id: string) {
-    setExpanded(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+  async function openFlavor(flavor: Row) {
+    setSelected(flavor)
+    setLoadingSteps(true)
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('humor_flavor_steps')
+      .select('*')
+      .eq('humor_flavor_id', flavor.id)
+    if (error) console.error('humor_flavor_steps:', error)
+    const sorted = (data ?? []).sort((a, b) =>
+      Number(a.humor_flavor_step_type_id ?? 0) - Number(b.humor_flavor_step_type_id ?? 0)
+    )
+    setSteps(sorted)
+    setLoadingSteps(false)
   }
 
-  function stepsFor(flavorId: string) {
-    return steps.filter(s => String(s.humor_flavor_id) === flavorId)
-  }
-
-  return (
-    <Section title="Humor Flavors + Steps" count={flavors.length}>
-      {!flavors.length ? <p style={s.empty}>No flavors.</p> : (
-        <div style={{ border: '1px solid #eee' }}>
-          {flavors.map((flavor, i) => {
-            const fid = String(flavor.id)
-            const isOpen = expanded.has(fid)
-            const flavorSteps = stepsFor(fid)
-            return (
-              <div key={fid} style={{ borderBottom: i < flavors.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                {/* Flavor row */}
-                <button
-                  type="button"
-                  onClick={() => toggle(fid)}
-                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
-                >
-                  <span style={{ fontSize: 9, color: '#999', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a', flex: 1 }}>{String(flavor.slug ?? flavor.name ?? fid)}</span>
-                  <span style={{ fontSize: 10, color: '#888' }}>{flavorSteps.length} step{flavorSteps.length !== 1 ? 's' : ''}</span>
-                </button>
-
-                {/* Steps expansion */}
-                {isOpen && (
-                  <div style={{ borderTop: '1px solid #f5f5f5', backgroundColor: '#fafafa', padding: '12px 16px 16px 40px' }}>
-                    {!!flavor.description && (
-                      <p style={{ fontSize: 12, color: '#777', margin: '0 0 16px', lineHeight: 1.5 }}>{String(flavor.description)}</p>
-                    )}
-                    {!flavorSteps.length ? (
-                      <p style={{ fontSize: 12, color: '#999', margin: 0 }}>No steps.</p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {flavorSteps.map((step, si) => (
-                          <div key={String(step.id)}>
-                          <div style={{ border: '1px solid #e8e8e8', backgroundColor: '#fff' }}>
-                            {/* Step header */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '9px 14px', borderBottom: '1px solid #f0f0f0', backgroundColor: '#f9f9f9' }}>
-                              <span style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', fontWeight: 500 }}>
-                                Step {String(step.order ?? step.step_order ?? si + 1)}
-                              </span>
-                              <div style={{ display: 'flex', gap: 14, marginLeft: 4 }}>
-                                {!!step.input_type  && <span style={{ fontSize: 10, color: '#aaa' }}>in: <strong style={{ color: '#666' }}>{String(step.input_type)}</strong></span>}
-                                {!!step.output_type && <span style={{ fontSize: 10, color: '#aaa' }}>out: <strong style={{ color: '#666' }}>{String(step.output_type)}</strong></span>}
-                                {step.temperature != null && <span style={{ fontSize: 10, color: '#aaa' }}>temp: <strong style={{ color: '#666' }}>{String(step.temperature)}</strong></span>}
-                              </div>
-                            </div>
-                            {/* Prompts */}
-                            {!!step.system_prompt && (
-                              <div style={{ padding: '10px 14px', borderBottom: !!step.user_prompt ? '1px solid #f5f5f5' : 'none' }}>
-                                <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' }}>System</p>
-                                <PromptText text={String(step.system_prompt)} />
-                              </div>
-                            )}
-                            {!!step.user_prompt && (
-                              <div style={{ padding: '10px 14px', backgroundColor: '#f9fef0' }}>
-                                <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#aac940', margin: '0 0 6px' }}>User</p>
-                                <PromptText text={String(step.user_prompt)} />
-                              </div>
-                            )}
-                          </div>
-                          {/* Chain connector */}
-                          {si < flavorSteps.length - 1 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 14px' }}>
-                              <div style={{ width: 1, height: 14, backgroundColor: '#ddd', marginLeft: 12 }} />
-                              <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>output → next step input</span>
-                            </div>
-                          )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+  if (selected) {
+    return (
+      <Section
+        title={String(selected.slug ?? selected.id)}
+        action={
+          <button type="button" onClick={() => setSelected(null)} style={s.backBtn}>
+            ← All Flavors
+          </button>
+        }
+      >
+        {!!selected.description && (
+          <p style={{ fontSize: 12, color: '#888', margin: '0 0 16px', lineHeight: 1.5 }}>{String(selected.description)}</p>
+        )}
+        {loadingSteps && <p style={s.empty}>Loading steps…</p>}
+        {!loadingSteps && steps.length === 0 && <p style={s.empty}>No steps for this flavor.</p>}
+        {!loadingSteps && steps.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {steps.map((step, si) => (
+              <div key={String(step.id)}>
+                <div style={s.stepCard}>
+                  <div style={s.stepHead}>
+                    <span style={s.stepNum}>Step {String(step.order ?? step.step_order ?? si + 1)}</span>
+                    <div style={{ display: 'flex', gap: 20 }}>
+                      {!!step.input_type  && <span style={s.stepMeta}>in: <strong>{String(step.input_type)}</strong></span>}
+                      {!!step.output_type && <span style={s.stepMeta}>out: <strong>{String(step.output_type)}</strong></span>}
+                      {step.temperature != null && <span style={s.stepMeta}>temp: <strong>{String(step.temperature)}</strong></span>}
+                    </div>
+                  </div>
+                  {!!step.system_prompt && (
+                    <div style={s.promptBlock}>
+                      <p style={s.promptLabel}>System Prompt</p>
+                      <PromptText text={String(step.system_prompt)} />
+                    </div>
+                  )}
+                  {!!step.user_prompt && (
+                    <div style={{ ...s.promptBlock, backgroundColor: '#f9fef0', borderColor: '#ddf09a' }}>
+                      <p style={s.promptLabel}>User Prompt</p>
+                      <PromptText text={String(step.user_prompt)} />
+                    </div>
+                  )}
+                </div>
+                {si < steps.length - 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px' }}>
+                    <div style={{ width: 1, height: 16, backgroundColor: '#ddd', marginLeft: 14 }} />
+                    <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>output → next step input</span>
                   </div>
                 )}
               </div>
-            )
-          })}
+            ))}
+          </div>
+        )}
+      </Section>
+    )
+  }
+
+  return (
+    <Section title="Humor Flavors" count={flavors.length}>
+      {loadingFlavors ? <p style={s.empty}>Loading…</p> : flavors.length === 0 ? <p style={s.empty}>No flavors.</p> : (
+        <div style={s.flavorGrid}>
+          {flavors.map(flavor => (
+            <button
+              key={String(flavor.id)}
+              type="button"
+              onClick={() => openFlavor(flavor)}
+              style={s.flavorCard}
+              className="flavor-card"
+            >
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a', display: 'block', marginBottom: 6 }}>
+                {String(flavor.slug ?? flavor.id)}
+              </span>
+              <p style={{ fontSize: 12, color: '#888', lineHeight: 1.5, margin: '0 0 10px', flex: 1 }}>
+                {String(flavor.description ?? '—').slice(0, 120)}
+              </p>
+              <span style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#aaa' }}>View steps →</span>
+            </button>
+          ))}
         </div>
       )}
     </Section>
@@ -531,28 +543,30 @@ export default function PipelinePage() {
     <div style={s.page}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
 
-      <div style={s.header}>
-        <p style={s.eyebrow}>Admin</p>
-        <h1 style={s.heading}><em>Pipeline.</em></h1>
-      </div>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#fff' }}>
+        <div style={s.header}>
+          <p style={s.eyebrow}>Admin</p>
+          <h1 style={s.heading}><em>Pipeline.</em></h1>
+        </div>
 
-      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 0 }} />
+        <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 0 }} />
 
-      <div style={s.tabBar}>
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            style={{
-              ...s.tabBtn,
-              color: tab === t.id ? '#1a1a1a' : '#aaa',
-              borderBottom: tab === t.id ? '2px solid #1a1a1a' : '2px solid transparent',
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+        <div style={s.tabBar}>
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              style={{
+                ...s.tabBtn,
+                color: tab === t.id ? '#1a1a1a' : '#aaa',
+                borderBottom: tab === t.id ? '2px solid #1a1a1a' : '2px solid transparent',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={s.content}>
@@ -642,6 +656,7 @@ export default function PipelinePage() {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        .flavor-card:hover { border-color: #1a1a1a !important; }
       `}</style>
     </div>
   )
@@ -670,4 +685,13 @@ const s: Record<string, React.CSSProperties> = {
   input:       { width: '100%', fontSize: 12, padding: '7px 10px', border: '1px solid #e8e8e8', outline: 'none', boxSizing: 'border-box', backgroundColor: '#fff', borderRadius: 4 },
   saveBtn:     { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: '#1a1a1a', color: '#fff', border: '1px solid #1a1a1a', cursor: 'pointer', borderRadius: 4 },
   cancelBtn:   { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: 'none', color: '#999', border: '1px solid #e8e8e8', cursor: 'pointer', borderRadius: 4 },
+  backBtn:     { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '6px 14px', background: 'none', color: '#666', border: '1px solid #e8e8e8', cursor: 'pointer' },
+  flavorGrid:  { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 },
+  flavorCard:  { textAlign: 'left', padding: '16px', border: '1px solid #ebebeb', background: '#fff', cursor: 'pointer', transition: 'border-color 0.15s', display: 'flex', flexDirection: 'column', borderRadius: 6 },
+  stepCard:    { border: '1px solid #ebebeb', overflow: 'hidden', borderRadius: 6 },
+  stepHead:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #f0f0f0', backgroundColor: '#fafafa' },
+  stepNum:     { fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#555', fontWeight: 600 },
+  stepMeta:    { fontSize: 11, color: '#aaa' },
+  promptBlock: { padding: '12px 14px', borderBottom: '1px solid #f5f5f5' },
+  promptLabel: { fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' },
 }

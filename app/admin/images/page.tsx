@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, DragEvent, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type ImageRecord = {
@@ -14,7 +14,7 @@ type Caption = {
   image_id: string
 }
 
-const PAGE_SIZE = 9
+const PAGE_SIZE = 12
 
 export default function ImagesPage() {
   const [images, setImages] = useState<ImageRecord[]>([])
@@ -106,15 +106,12 @@ export default function ImagesPage() {
 
   async function uploadFiles(files: File[]) {
     if (!files.length) return
-
     setUploading(true)
     const supabase = createClient()
-
     const { data: { user } } = await supabase.auth.getUser()
     const profileId = user?.id
 
     for (const file of files) {
-      // Phase 1a: get presigned URL from AWS S3
       const presignRes = await fetch('/api/presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,7 +121,6 @@ export default function ImagesPage() {
 
       const { presignedUrl, publicUrl } = await presignRes.json()
 
-      // Phase 1b: upload file directly to S3
       const uploadRes = await fetch(presignedUrl, {
         method: 'PUT',
         headers: { 'Content-Type': file.type },
@@ -132,7 +128,6 @@ export default function ImagesPage() {
       })
       if (!uploadRes.ok) { console.error('Failed to upload to S3'); continue }
 
-      // Phase 1c: store public URL in Supabase, get back the image ID
       const { data: imageData, error: dbError } = await supabase
         .from('images')
         .insert({ url: publicUrl })
@@ -140,7 +135,6 @@ export default function ImagesPage() {
         .single()
       if (dbError || !imageData) { console.error(dbError); continue }
 
-      // Phase 2: trigger caption generation pipeline
       const pipelineRes = await fetch(`${process.env.NEXT_PUBLIC_PIPELINE_URL}/pipeline/generate_captions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -163,8 +157,7 @@ export default function ImagesPage() {
     event.preventDefault()
     setDragOver(false)
     if (uploading) return
-    const files = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'))
-    uploadFiles(files)
+    uploadFiles(Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/')))
   }
 
   async function handleDelete(image: ImageRecord) {
@@ -193,13 +186,12 @@ export default function ImagesPage() {
           <p style={s.eyebrow}>Library</p>
           <h1 style={s.heading}><em>Images.</em></h1>
         </div>
-        <div style={{ textAlign: 'right', fontSize: 11, color: '#999', lineHeight: 1.8 }}>
-          <div>{loading ? '—' : `${totalCount} images`}</div>
-          <div>Page {page + 1}</div>
-        </div>
+        <span style={{ fontSize: 11, color: '#999' }}>
+          {loading ? '—' : `${totalCount} images · page ${page + 1}`}
+        </span>
       </div>
 
-      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 20 }} />
+      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 24 }} />
 
       <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleUpload} />
 
@@ -209,18 +201,18 @@ export default function ImagesPage() {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         style={{
-          ...s.uploadZone,
-          borderColor: dragOver ? '#1a1a1a' : '#ddd',
-          backgroundColor: dragOver ? '#f5f5f5' : '#fafafa',
+          margin: '0 32px 28px',
+          border: `1px dashed ${dragOver ? '#1a1a1a' : '#ddd'}`,
+          padding: '24px',
+          textAlign: 'center',
+          backgroundColor: dragOver ? '#f5f5f5' : 'transparent',
           cursor: uploading ? 'not-allowed' : 'pointer',
-          opacity: uploading ? 0.6 : 1,
+          opacity: uploading ? 0.5 : 1,
+          transition: 'border-color 0.15s, background-color 0.15s',
         }}
       >
-        <p style={{ fontSize: 13, color: '#1a1a1a', margin: 0 }}>
-          {uploading ? 'Uploading...' : dragOver ? 'Drop to upload' : 'Upload images'}
-        </p>
-        <p style={{ fontSize: 11, color: '#999', margin: '6px 0 0' }}>
-          Click to browse or drag & drop
+        <p style={{ fontSize: 12, color: '#555', margin: 0 }}>
+          {uploading ? 'Uploading…' : dragOver ? 'Drop to upload' : 'Click or drag images to upload'}
         </p>
       </div>
 
@@ -234,7 +226,6 @@ export default function ImagesPage() {
               const imageCaptions = captions[image.id] ?? []
               const currentIndex = captionIndex[image.id] ?? 0
               const currentCaption = imageCaptions[currentIndex]
-
               const isHovered = hoveredId === image.id
 
               return (
@@ -244,23 +235,29 @@ export default function ImagesPage() {
                   onMouseEnter={() => setHoveredId(image.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
-                  {/* Image + hover overlay */}
-                  <div style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', backgroundColor: '#f5f5f5', flexShrink: 0 }}>
-                    <img src={image.url} alt={`image ${image.id}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', backgroundColor: '#f0f0f0' }}>
+                    <img src={image.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
 
-                    {/* Hover action overlay */}
                     {isHovered && editing !== image.id && (
-                      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'flex-end', padding: 10, gap: 6 }}>
+                      <div style={{
+                        position: 'absolute', inset: 0,
+                        backgroundColor: 'rgba(0,0,0,0.45)',
+                        display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center',
+                        gap: 8, padding: '0 12px',
+                      }}>
                         <button
                           type="button"
                           onClick={() => { setEditing(image.id); setEditUrl(image.url) }}
                           style={s.overlayBtn}
-                        >Edit URL</button>
+                        >
+                          Edit URL
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleDelete(image)}
                           disabled={deleting === image.id}
-                          style={{ ...s.overlayBtn, backgroundColor: 'rgba(200,40,30,0.85)', borderColor: 'transparent' }}
+                          style={{ ...s.overlayBtn, backgroundColor: 'rgba(200,40,30,0.9)', borderColor: 'transparent' }}
                         >
                           {deleting === image.id ? '…' : 'Delete'}
                         </button>
@@ -268,9 +265,8 @@ export default function ImagesPage() {
                     )}
                   </div>
 
-                  {/* Edit form (when active) */}
                   {editing === image.id && (
-                    <div style={{ padding: '10px 12px', borderBottom: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    <div style={{ padding: '10px 12px', borderBottom: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <input
                         value={editUrl}
                         onChange={e => setEditUrl(e.target.value)}
@@ -278,25 +274,23 @@ export default function ImagesPage() {
                         style={s.input}
                       />
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button type="button" onClick={() => handleUpdate(image)} style={{ ...s.btn, background: '#1a1a1a', color: '#fff', border: '1px solid #1a1a1a', flex: 1 }}>Save</button>
-                        <button type="button" onClick={() => { setEditing(null); setEditUrl('') }} style={{ ...s.btn, flex: 1 }}>Cancel</button>
+                        <button type="button" onClick={() => handleUpdate(image)} style={{ ...s.btn, background: '#1a1a1a', color: '#fff', border: '1px solid #1a1a1a' }}>Save</button>
+                        <button type="button" onClick={() => { setEditing(null); setEditUrl('') }} style={s.btn}>Cancel</button>
                       </div>
                     </div>
                   )}
 
-                  {/* Caption block — fixed height */}
                   <div style={s.captionBlock}>
-                    <p style={{ fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' }}>Captions</p>
                     {imageCaptions.length === 0 ? (
-                      <p style={{ fontSize: 11, color: '#999', margin: 0 }}>No captions</p>
+                      <p style={{ fontSize: 11, color: '#bbb', margin: 0 }}>No captions</p>
                     ) : (
                       <>
                         <p style={{ fontSize: 11, color: '#555', lineHeight: 1.5, margin: '0 0 8px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                          {currentCaption?.content ?? <span style={{ color: '#999' }}>—</span>}
+                          {currentCaption?.content}
                         </p>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <button type="button" onClick={() => prevCaption(image.id)} style={s.arrowBtn}>←</button>
-                          <span style={{ fontSize: 10, color: '#888' }}>{currentIndex + 1} / {imageCaptions.length}</span>
+                          <span style={{ fontSize: 10, color: '#aaa' }}>{currentIndex + 1} / {imageCaptions.length}</span>
                           <button type="button" onClick={() => nextCaption(image.id)} style={s.arrowBtn}>→</button>
                         </div>
                       </>
@@ -307,7 +301,7 @@ export default function ImagesPage() {
             })}
           </div>
 
-          <div style={{ height: 1, backgroundColor: '#eee', margin: '32px 0 0' }} />
+          <div style={{ height: 1, backgroundColor: '#f0f0f0', margin: '32px 0 0' }} />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 32px' }}>
             <button
@@ -315,18 +309,14 @@ export default function ImagesPage() {
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
               style={{ ...s.btn, opacity: page === 0 ? 0.35 : 1, cursor: page === 0 ? 'not-allowed' : 'pointer' }}
-            >
-              ← Prev
-            </button>
-            <span style={{ fontFamily: "'DM Serif Display', serif", fontStyle: 'italic', fontSize: 22, color: '#1a1a1a' }}>{page + 1}</span>
+            >← Prev</button>
+            <span style={{ fontFamily: "'DM Serif Display', serif", fontStyle: 'italic', fontSize: 20, color: '#1a1a1a' }}>{page + 1}</span>
             <button
               type="button"
               onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
               style={{ ...s.btn, opacity: page >= totalPages - 1 ? 0.35 : 1, cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer' }}
-            >
-              Next →
-            </button>
+            >Next →</button>
           </div>
         </>
       )}
@@ -342,64 +332,16 @@ export default function ImagesPage() {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page: {
-    backgroundColor: '#fff',
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: '100%',
-    animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    padding: '32px 32px 20px',
-  },
-  eyebrow: { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' },
-  heading: {
-    fontFamily: "'DM Serif Display', serif",
-    fontSize: 40,
-    fontWeight: 400,
-    lineHeight: 1,
-    letterSpacing: '-0.02em',
-    color: '#1a1a1a',
-    margin: 0,
-  },
-  uploadZone: {
-    margin: '0 32px 28px',
-    border: '2px dashed #ddd',
-    padding: '32px 24px',
-    textAlign: 'center',
-    transition: 'border-color 0.15s, background-color 0.15s',
-  },
-  empty: { padding: 48, textAlign: 'center', fontSize: 12, color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-    gap: 12,
-    padding: '0 32px',
-  },
-  card: { border: '1px solid #ebebeb', backgroundColor: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
-  captionBlock: { padding: '10px 12px', height: 90, display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 },
-  arrowBtn: { fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#888', padding: 0 },
-  overlayBtn: { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '5px 10px', backgroundColor: 'rgba(255,255,255,0.9)', color: '#1a1a1a', border: '1px solid rgba(255,255,255,0.4)', cursor: 'pointer' },
-  btn: {
-    flex: 1,
-    fontSize: 11,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    padding: '8px',
-    background: '#fafafa',
-    color: '#1a1a1a',
-    border: '1px solid #ddd',
-    cursor: 'pointer',
-  },
-  input: {
-    fontSize: 12,
-    padding: '8px 10px',
-    border: '1px solid #ddd',
-    outline: 'none',
-    width: '100%',
-    boxSizing: 'border-box',
-  },
+  page:        { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
+  header:      { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '32px 32px 20px' },
+  eyebrow:     { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#888', margin: '0 0 6px' },
+  heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
+  empty:       { padding: 48, textAlign: 'center', fontSize: 12, color: '#999' },
+  grid:        { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 1, padding: '0 32px' },
+  card:        { backgroundColor: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+  captionBlock:{ padding: '10px 12px', height: 80, display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' },
+  arrowBtn:    { fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: 0 },
+  overlayBtn:  { width: 'calc(100% - 0px)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '9px 0', backgroundColor: 'rgba(255,255,255,0.9)', color: '#1a1a1a', border: 'none', cursor: 'pointer', textAlign: 'center' },
+  btn:         { fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '7px 12px', background: '#fafafa', color: '#555', border: '1px solid #e8e8e8', cursor: 'pointer' },
+  input:       { fontSize: 12, padding: '7px 10px', border: '1px solid #e0e0e0', outline: 'none', width: '100%', boxSizing: 'border-box' },
 }
