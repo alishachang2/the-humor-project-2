@@ -5,6 +5,21 @@ import { createClient } from '@/lib/supabase/client'
 
 type Row = Record<string, unknown>
 
+// ─── prompt text with variable highlighting ───────────────────────────────────
+
+function PromptText({ text }: { text: string }) {
+  const parts = text.split(/(\$\{[^}]+\}|\$[a-zA-Z_]\w*)/g)
+  return (
+    <p style={{ fontSize: 12, color: '#444', margin: 0, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+      {parts.map((part, i) =>
+        /^(\$\{[^}]+\}|\$[a-zA-Z_]\w*)$/.test(part)
+          ? <span key={i} style={{ backgroundColor: '#fffbe6', color: '#b7791f', borderRadius: 2, padding: '1px 4px', fontFamily: 'monospace', fontSize: 11 }}>{part}</span>
+          : part
+      )}
+    </p>
+  )
+}
+
 const TABS = [
   { id: 'humor',    label: 'Humor' },
   { id: 'captions', label: 'Captions' },
@@ -238,6 +253,205 @@ function CaptionsSection() {
   )
 }
 
+// ─── humor flavors + steps (prompt chain view) ───────────────────────────────
+
+function HumorFlavorsSection() {
+  const [flavors, setFlavors] = useState<Row[]>([])
+  const [steps, setSteps]     = useState<Row[]>([])
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const [{ data: fData }, { data: sData }] = await Promise.all([
+        supabase.from('humor_flavors').select('*').order('created_datetime_utc', { ascending: true }),
+        supabase.from('humor_flavor_steps').select('*').order('order', { ascending: true }),
+      ])
+      setFlavors(fData ?? [])
+      setSteps(sData ?? [])
+    }
+    load()
+  }, [])
+
+  function toggle(id: string) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function stepsFor(flavorId: string) {
+    return steps.filter(s => String(s.flavor_id) === flavorId)
+  }
+
+  return (
+    <Section title="Humor Flavors + Steps" count={flavors.length}>
+      {!flavors.length ? <p style={s.empty}>No flavors.</p> : (
+        <div style={{ border: '1px solid #eee' }}>
+          {flavors.map((flavor, i) => {
+            const fid = String(flavor.id)
+            const isOpen = expanded.has(fid)
+            const flavorSteps = stepsFor(fid)
+            return (
+              <div key={fid} style={{ borderBottom: i < flavors.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+                {/* Flavor row */}
+                <button
+                  type="button"
+                  onClick={() => toggle(fid)}
+                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
+                >
+                  <span style={{ fontSize: 9, color: '#ccc', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a', flex: 1 }}>{String(flavor.slug ?? flavor.name ?? fid)}</span>
+                  <span style={{ fontSize: 10, color: '#bbb' }}>{flavorSteps.length} step{flavorSteps.length !== 1 ? 's' : ''}</span>
+                </button>
+
+                {/* Steps expansion */}
+                {isOpen && (
+                  <div style={{ borderTop: '1px solid #f5f5f5', backgroundColor: '#fafafa', padding: '12px 16px 16px 40px' }}>
+                    {!!flavor.description && (
+                      <p style={{ fontSize: 12, color: '#777', margin: '0 0 16px', lineHeight: 1.5 }}>{String(flavor.description)}</p>
+                    )}
+                    {!flavorSteps.length ? (
+                      <p style={{ fontSize: 12, color: '#ccc', margin: 0 }}>No steps.</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {flavorSteps.map((step, si) => (
+                          <div key={String(step.id)}>
+                          <div style={{ border: '1px solid #e8e8e8', backgroundColor: '#fff' }}>
+                            {/* Step header */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '9px 14px', borderBottom: '1px solid #f0f0f0', backgroundColor: '#f9f9f9' }}>
+                              <span style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', fontWeight: 500 }}>
+                                Step {String(step.order ?? step.step_order ?? si + 1)}
+                              </span>
+                              <div style={{ display: 'flex', gap: 14, marginLeft: 4 }}>
+                                {!!step.input_type  && <span style={{ fontSize: 10, color: '#aaa' }}>in: <strong style={{ color: '#666' }}>{String(step.input_type)}</strong></span>}
+                                {!!step.output_type && <span style={{ fontSize: 10, color: '#aaa' }}>out: <strong style={{ color: '#666' }}>{String(step.output_type)}</strong></span>}
+                                {step.temperature != null && <span style={{ fontSize: 10, color: '#aaa' }}>temp: <strong style={{ color: '#666' }}>{String(step.temperature)}</strong></span>}
+                              </div>
+                            </div>
+                            {/* Prompts */}
+                            {!!step.system_prompt && (
+                              <div style={{ padding: '10px 14px', borderBottom: !!step.user_prompt ? '1px solid #f5f5f5' : 'none' }}>
+                                <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' }}>System</p>
+                                <PromptText text={String(step.system_prompt)} />
+                              </div>
+                            )}
+                            {!!step.user_prompt && (
+                              <div style={{ padding: '10px 14px', backgroundColor: '#f9fef0' }}>
+                                <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#aac940', margin: '0 0 6px' }}>User</p>
+                                <PromptText text={String(step.user_prompt)} />
+                              </div>
+                            )}
+                          </div>
+                          {/* Chain connector */}
+                          {si < flavorSteps.length - 1 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 14px' }}>
+                              <div style={{ width: 1, height: 14, backgroundColor: '#ddd', marginLeft: 12 }} />
+                              <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#ccc' }}>output → next step input</span>
+                            </div>
+                          )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Section>
+  )
+}
+
+// ─── llm model responses (expandable prompt + response) ───────────────────────
+
+function LlmResponsesSection() {
+  const [rows, setRows]         = useState<Row[]>([])
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data } = await supabase.from('llm_model_responses').select('*').order('created_datetime_utc', { ascending: false })
+      setRows(data ?? [])
+    }
+    load()
+  }, [])
+
+  function toggle(id: string) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const promptKeys = ['prompt_sent', 'response_received']
+  const metaKeys = rows.length
+    ? Object.keys(rows[0]).filter(k => !promptKeys.includes(k))
+    : []
+
+  return (
+    <Section title="LLM Model Responses" count={rows.length}>
+      {!rows.length ? <p style={s.empty}>No records.</p> : (
+        <div style={{ border: '1px solid #eee' }}>
+          {rows.map((row, i) => {
+            const id = String(row.id)
+            const isOpen = expanded.has(id)
+            const preview = row.response_received
+              ? String(row.response_received).slice(0, 100) + (String(row.response_received).length > 100 ? '…' : '')
+              : row.prompt_sent
+                ? 'Prompt: ' + String(row.prompt_sent).slice(0, 80) + '…'
+                : id
+            return (
+              <div key={id} style={{ borderBottom: i < rows.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                <button
+                  type="button"
+                  onClick={() => toggle(id)}
+                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '11px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
+                >
+                  <span style={{ fontSize: 9, color: '#ccc', flexShrink: 0, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                  <span style={{ fontSize: 12, color: '#444', flex: 1, lineHeight: 1.4 }}>{preview}</span>
+                </button>
+                {isOpen && (
+                  <div style={{ borderTop: '1px solid #f9f9f9', backgroundColor: '#fafafa', padding: '10px 14px 14px 33px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {/* Meta fields */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 24px' }}>
+                      {metaKeys.map(k => (
+                        <div key={k} style={{ display: 'flex', gap: 8 }}>
+                          <span style={{ fontSize: 9, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase', paddingTop: 1 }}>{k}</span>
+                          <span style={{ fontSize: 11, color: '#555' }}>{String(row[k] ?? '—')}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Prompt sent */}
+                    {!!row.prompt_sent && (
+                      <div>
+                        <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' }}>Prompt sent</p>
+                        <p style={{ fontSize: 12, color: '#444', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', backgroundColor: '#fff', border: '1px solid #eee', padding: '10px 12px' }}>{String(row.prompt_sent)}</p>
+                      </div>
+                    )}
+                    {/* Response received */}
+                    {!!row.response_received && (
+                      <div>
+                        <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#aac940', margin: '0 0 6px' }}>Response received</p>
+                        <p style={{ fontSize: 12, color: '#444', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', backgroundColor: '#f9fef0', border: '1px solid #e8f5c0', padding: '10px 12px' }}>{String(row.response_received)}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Section>
+  )
+}
+
 // ─── humor mix ────────────────────────────────────────────────────────────────
 
 function HumorMixSection() {
@@ -339,11 +553,9 @@ export default function PipelinePage() {
       <div style={s.content}>
         {tab === 'humor' && (
           <>
-            <ReadSection title="Humor Flavors" table="humor_flavors" />
-            <hr style={s.divider} />
-            <ReadSection title="Humor Flavor Steps" table="humor_flavor_steps" />
-            <hr style={s.divider} />
             <HumorMixSection />
+            <hr style={s.divider} />
+            <HumorFlavorsSection />
           </>
         )}
 
@@ -388,7 +600,7 @@ export default function PipelinePage() {
             <hr style={s.divider} />
             <ReadSection title="LLM Prompt Chains" table="llm_prompt_chains" />
             <hr style={s.divider} />
-            <ReadSection title="LLM Model Responses" table="llm_model_responses" />
+            <LlmResponsesSection />
           </>
         )}
 

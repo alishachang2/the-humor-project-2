@@ -5,6 +5,21 @@ import { createClient } from '@/lib/supabase/client'
 
 type Row = Record<string, unknown>
 
+// ─── prompt text with variable highlighting ───────────────────────────────────
+
+function PromptText({ text }: { text: string }) {
+  const parts = text.split(/(\$\{[^}]+\}|\$[a-zA-Z_]\w*)/g)
+  return (
+    <p style={{ fontSize: 12, color: '#444', margin: 0, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+      {parts.map((part, i) =>
+        /^(\$\{[^}]+\}|\$[a-zA-Z_]\w*)$/.test(part)
+          ? <span key={i} style={{ backgroundColor: '#fffbe6', color: '#b7791f', borderRadius: 2, padding: '1px 4px', fontFamily: 'monospace', fontSize: 11 }}>{part}</span>
+          : part
+      )}
+    </p>
+  )
+}
+
 // ─── page ──────────────────────────────────────────────────────────────────
 
 export default function HumorPage() {
@@ -162,47 +177,56 @@ export default function HumorPage() {
             {loadingSteps && <p style={s.muted}>Loading steps…</p>}
             {!loadingSteps && steps.length === 0 && <p style={s.muted}>No steps for this flavor.</p>}
             {!loadingSteps && steps.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {steps.map(step => (
-                  <div key={String(step.id)} style={s.stepCard}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {steps.map((step, si) => (
+                  <div key={String(step.id)}>
+                    <div style={s.stepCard}>
 
-                    {/* Step header */}
-                    <div style={s.stepHead}>
-                      <span style={s.stepNum}>Step {String(step.order ?? step.step_order ?? '?')}</span>
-                      <div style={{ display: 'flex', gap: 20 }}>
-                        {!!step.input_type  && <span style={s.stepMeta}>in: <strong>{String(step.input_type)}</strong></span>}
-                        {!!step.output_type && <span style={s.stepMeta}>out: <strong>{String(step.output_type)}</strong></span>}
-                        {step.temperature != null && <span style={s.stepMeta}>temp: <strong>{String(step.temperature)}</strong></span>}
-                      </div>
-                    </div>
-
-                    {/* System prompt */}
-                    {!!step.system_prompt && (
-                      <div style={s.promptBlock}>
-                        <p style={s.promptLabel}>System Prompt</p>
-                        <p style={s.promptText}>{String(step.system_prompt)}</p>
-                      </div>
-                    )}
-
-                    {/* User prompt */}
-                    {!!step.user_prompt && (
-                      <div style={{ ...s.promptBlock, backgroundColor: '#f9fef0', borderColor: '#ddf09a' }}>
-                        <p style={s.promptLabel}>User Prompt</p>
-                        <p style={s.promptText}>{String(step.user_prompt)}</p>
-                      </div>
-                    )}
-
-                    {/* Any other fields as key/value pairs */}
-                    {Object.entries(step)
-                      .filter(([k, v]) => !['id','flavor_id','order','step_order','input_type','output_type','temperature','system_prompt','user_prompt','created_datetime_utc','modified_datetime_utc'].includes(k) && v != null)
-                      .map(([k, v]) => (
-                        <div key={k} style={{ ...s.promptBlock, backgroundColor: '#fafafa' }}>
-                          <p style={s.promptLabel}>{k}</p>
-                          <p style={s.promptText}>{String(v)}</p>
+                      {/* Step header */}
+                      <div style={s.stepHead}>
+                        <span style={s.stepNum}>Step {String(step.order ?? step.step_order ?? si + 1)}</span>
+                        <div style={{ display: 'flex', gap: 20 }}>
+                          {!!step.input_type  && <span style={s.stepMeta}>in: <strong>{String(step.input_type)}</strong></span>}
+                          {!!step.output_type && <span style={s.stepMeta}>out: <strong>{String(step.output_type)}</strong></span>}
+                          {step.temperature != null && <span style={s.stepMeta}>temp: <strong>{String(step.temperature)}</strong></span>}
                         </div>
-                      ))
-                    }
+                      </div>
 
+                      {/* System prompt */}
+                      {!!step.system_prompt && (
+                        <div style={s.promptBlock}>
+                          <p style={s.promptLabel}>System Prompt</p>
+                          <PromptText text={String(step.system_prompt)} />
+                        </div>
+                      )}
+
+                      {/* User prompt */}
+                      {!!step.user_prompt && (
+                        <div style={{ ...s.promptBlock, backgroundColor: '#f9fef0', borderColor: '#ddf09a' }}>
+                          <p style={s.promptLabel}>User Prompt</p>
+                          <PromptText text={String(step.user_prompt)} />
+                        </div>
+                      )}
+
+                      {/* Any other fields */}
+                      {Object.entries(step)
+                        .filter(([k, v]) => !['id','flavor_id','order','step_order','input_type','output_type','temperature','system_prompt','user_prompt','created_datetime_utc','modified_datetime_utc'].includes(k) && v != null)
+                        .map(([k, v]) => (
+                          <div key={k} style={{ ...s.promptBlock, backgroundColor: '#fafafa' }}>
+                            <p style={s.promptLabel}>{k}</p>
+                            <PromptText text={String(v)} />
+                          </div>
+                        ))
+                      }
+
+                    </div>
+                    {/* Chain connector */}
+                    {si < steps.length - 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px' }}>
+                        <div style={{ width: 1, height: 16, backgroundColor: '#ddd', marginLeft: 14 }} />
+                        <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#ccc' }}>output → next step input</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
