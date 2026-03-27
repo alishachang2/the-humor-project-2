@@ -40,7 +40,7 @@ function Table({ rows, onEdit, onDelete }: {
   if (!rows.length) return <p style={s.empty}>No records.</p>
   const cols = Object.keys(rows[0])
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 320px)' }}>
       <table style={s.table}>
         <thead>
           <tr>
@@ -255,7 +255,7 @@ function CaptionsSection() {
   return (
     <Section title="Captions" count={totalCaptions}>
       {!groups.length ? <p style={s.empty}>No records.</p> : (
-        <div style={{ border: '1px solid #eee' }}>
+        <div style={{ border: '1px solid #eee', overflowY: 'auto', maxHeight: 'calc(100vh - 320px)' }}>
           {groups.map((group, gi) => {
             const isOpen = expanded.has(group.imageId)
             return (
@@ -726,7 +726,7 @@ function StudyEmailsSection() {
       )}
 
       {!rows.length ? <p style={s.empty}>No study participants yet.</p> : (
-        <div style={{ border: '1px solid #eee' }}>
+        <div style={{ border: '1px solid #eee', overflowY: 'auto', maxHeight: 'calc(100vh - 320px)' }}>
           {rows.map((row, i) => {
             const id = String(row.id)
             const isEditing = editingId === id
