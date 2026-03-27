@@ -577,35 +577,126 @@ function HumorMixSection() {
   )
 }
 
-// ─── study emails (profiles where is_in_study = true) ────────────────────────
+// ─── study participants (profiles where is_in_study = true) ──────────────────
 
 function StudyEmailsSection() {
-  const [rows, setRows] = useState<Row[]>([])
+  const [rows, setRows]         = useState<Row[]>([])
+  const [adding, setAdding]     = useState(false)
+  const [addEmail, setAddEmail] = useState('')
+  const [addError, setAddError] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<{ first_name: string; last_name: string; email: string }>({ first_name: '', last_name: '', email: '' })
 
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, email, first_name, last_name')
-        .eq('is_in_study', true)
-        .order('created_datetime_utc', { ascending: false })
-      setRows(data ?? [])
-    }
+  async function load() {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, email, first_name, last_name')
+      .eq('is_in_study', true)
+      .order('created_datetime_utc', { ascending: false })
+    setRows(data ?? [])
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function handleAdd() {
+    setAddError('')
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email, first_name, last_name')
+      .eq('email', addEmail.trim())
+      .single()
+    if (error || !data) { setAddError('No profile found with that email.'); return }
+    await supabase.from('profiles').update({ is_in_study: true }).eq('id', data.id)
+    setAdding(false)
+    setAddEmail('')
     load()
-  }, [])
+  }
+
+  async function handleUpdate(id: string) {
+    const supabase = createClient()
+    await supabase.from('profiles').update({
+      first_name: editForm.first_name,
+      last_name: editForm.last_name,
+      email: editForm.email,
+    }).eq('id', id)
+    setEditingId(null)
+    load()
+  }
+
+  async function handleRemove(id: string) {
+    const supabase = createClient()
+    await supabase.from('profiles').update({ is_in_study: false }).eq('id', id)
+    load()
+  }
+
+  function startEdit(row: Row) {
+    setEditingId(String(row.id))
+    setEditForm({
+      first_name: String(row.first_name ?? ''),
+      last_name:  String(row.last_name ?? ''),
+      email:      String(row.email ?? ''),
+    })
+  }
 
   return (
-    <Section title="Study Participants" count={rows.length}>
-      {!rows.length ? <p style={s.empty}>No profiles with is_in_study = true.</p> : (
+    <Section
+      title="Study Participants"
+      count={rows.length}
+      action={<button type="button" onClick={() => { setAdding(true); setAddError('') }} style={s.addBtn}>+ Add</button>}
+    >
+      {adding && (
+        <div style={s.formBox}>
+          <p style={s.formTitle}>Add by email</p>
+          <input
+            value={addEmail}
+            onChange={e => setAddEmail(e.target.value)}
+            placeholder="user@example.com"
+            style={{ ...s.input, marginBottom: 8 }}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          />
+          {addError && <p style={{ fontSize: 11, color: '#c0392b', margin: '0 0 8px' }}>{addError}</p>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" onClick={handleAdd} style={s.saveBtn}>Add</button>
+            <button type="button" onClick={() => { setAdding(false); setAddEmail(''); setAddError('') }} style={s.cancelBtn}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {!rows.length ? <p style={s.empty}>No study participants yet.</p> : (
         <div style={{ border: '1px solid #eee' }}>
-          {rows.map((row, i) => (
-            <div key={String(row.id)} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 14px', borderBottom: i < rows.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
-              <span style={{ fontSize: 12, color: '#333', flex: 1 }}>{String(row.email ?? '—')}</span>
-              <span style={{ fontSize: 12, color: '#888' }}>{String(row.first_name ?? '')} {String(row.last_name ?? '')}</span>
-              <span style={{ fontSize: 10, color: '#bbb', fontFamily: 'monospace' }}>{String(row.id).slice(0, 8)}…</span>
-            </div>
-          ))}
+          {rows.map((row, i) => {
+            const id = String(row.id)
+            const isEditing = editingId === id
+            return (
+              <div key={id} style={{ borderBottom: i < rows.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                {isEditing ? (
+                  <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input value={editForm.first_name} onChange={e => setEditForm(p => ({ ...p, first_name: e.target.value }))} placeholder="First name" style={{ ...s.input, flex: 1 }} />
+                      <input value={editForm.last_name}  onChange={e => setEditForm(p => ({ ...p, last_name: e.target.value }))}  placeholder="Last name"  style={{ ...s.input, flex: 1 }} />
+                    </div>
+                    <input value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} placeholder="Email" style={s.input} />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button type="button" onClick={() => handleUpdate(id)} style={s.saveBtn}>Save</button>
+                      <button type="button" onClick={() => setEditingId(null)} style={s.cancelBtn}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 14px' }}>
+                    <span style={{ fontSize: 12, color: '#333', flex: 1 }}>{String(row.email ?? '—')}</span>
+                    <span style={{ fontSize: 12, color: '#888' }}>{String(row.first_name ?? '')} {String(row.last_name ?? '')}</span>
+                    <span style={{ fontSize: 10, color: '#bbb', fontFamily: 'monospace', marginRight: 8 }}>{id.slice(0, 8)}…</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button type="button" onClick={() => startEdit(row)} style={s.rowBtn}>Edit</button>
+                      <button type="button" onClick={() => handleRemove(id)} style={{ ...s.rowBtn, color: '#c0392b', borderColor: '#f5c6c0' }}>Remove</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </Section>

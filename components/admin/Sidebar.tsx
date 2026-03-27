@@ -1,13 +1,12 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Image, Smile, Zap } from 'lucide-react'
+import { LayoutDashboard, Users, Image, Zap } from 'lucide-react'
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', href: '/admin' },
   { icon: Users,           label: 'Users',     id: 'users',     href: '/admin/users' },
   { icon: Image,           label: 'Images',    id: 'images',    href: '/admin/images' },
-  { icon: Smile,           label: 'Humor',     id: 'humor',     href: '/admin/humor' },
   { icon: Zap,             label: 'Pipeline',  id: 'pipeline',  href: '/admin/pipeline' },
 ]
 
