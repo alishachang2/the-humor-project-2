@@ -90,7 +90,7 @@ export default function HumorPage() {
         )}
       </div>
 
-      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 32 }} />
+      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 24 }} />
 
       {/* ── flavor list + mix ── */}
       {!selected && (
@@ -252,31 +252,31 @@ export default function HumorPage() {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page: { minHeight: '100vh', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', animation: 'fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '40px 48px 24px' },
-  eyebrow: { fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', margin: '0 0 10px' },
-  heading: { fontFamily: "'DM Serif Display', serif", fontSize: 64, fontWeight: 400, lineHeight: 0.9, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
-  backBtn: { fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '8px 16px', background: 'transparent', color: '#1a1a1a', border: '1px solid #ddd', cursor: 'pointer' },
-  body: { padding: '0 48px 48px', display: 'flex', flexDirection: 'column', gap: 48 },
-  sectionTitle: { fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', margin: '0 0 4px' },
-  sectionSub: { fontSize: 12, color: '#bbb', margin: '0 0 20px' },
-  muted: { fontSize: 12, color: '#ccc' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 },
-  card: { textAlign: 'left', padding: '20px', border: '1px solid #eee', background: '#fff', cursor: 'pointer', transition: 'border-color 0.15s', display: 'flex', flexDirection: 'column' },
-  cardTitle: { fontSize: 13, fontWeight: 500, color: '#1a1a1a' },
-  badge: { fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#aaa', border: '1px solid #eee', padding: '2px 7px', whiteSpace: 'nowrap' },
-  cardDesc: { fontSize: 12, color: '#777', lineHeight: 1.55, margin: '8px 0 12px', flex: 1 },
-  cardCta: { fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#bbb' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
-  th: { textAlign: 'left', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#aaa', padding: '8px 12px', borderBottom: '1px solid #eee' },
-  td: { padding: '10px 12px', borderBottom: '1px solid #f5f5f5', color: '#333', verticalAlign: 'top', maxWidth: 280, wordBreak: 'break-word' },
-  btn: { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '5px 12px', background: '#fafafa', color: '#1a1a1a', border: '1px solid #ddd', cursor: 'pointer' },
-  input: { fontSize: 12, padding: '6px 8px', border: '1px solid #ddd', outline: 'none', boxSizing: 'border-box' },
-  stepCard: { border: '1px solid #eee', overflow: 'hidden' },
-  stepHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #eee', backgroundColor: '#fafafa' },
-  stepNum: { fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1a1a1a', fontWeight: 500 },
-  stepMeta: { fontSize: 11, color: '#aaa' },
-  promptBlock: { padding: '14px 16px', borderBottom: '1px solid #f5f5f5' },
-  promptLabel: { fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 8px' },
-  promptText: { fontSize: 12, color: '#444', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
+  page:        { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
+  header:      { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '32px 32px 20px' },
+  eyebrow:     { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' },
+  heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
+  backBtn:     { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '6px 14px', background: 'none', color: '#666', border: '1px solid #e8e8e8', cursor: 'pointer' },
+  body:        { padding: '0 32px 40px', display: 'flex', flexDirection: 'column', gap: 36 },
+  sectionTitle:{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', margin: '0 0 4px' },
+  sectionSub:  { fontSize: 12, color: '#bbb', margin: '0 0 16px' },
+  muted:       { fontSize: 12, color: '#ccc' },
+  grid:        { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 },
+  card:        { textAlign: 'left', padding: '16px', border: '1px solid #ebebeb', background: '#fff', cursor: 'pointer', transition: 'border-color 0.15s', display: 'flex', flexDirection: 'column', borderRadius: 6 },
+  cardTitle:   { fontSize: 13, fontWeight: 500, color: '#1a1a1a' },
+  badge:       { fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#aaa', border: '1px solid #eee', padding: '2px 7px', whiteSpace: 'nowrap', borderRadius: 3 },
+  cardDesc:    { fontSize: 12, color: '#888', lineHeight: 1.5, margin: '6px 0 10px', flex: 1 },
+  cardCta:     { fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#bbb' },
+  table:       { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
+  th:          { textAlign: 'left', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbb', padding: '8px 12px', borderBottom: '1px solid #f0f0f0' },
+  td:          { padding: '10px 12px', borderBottom: '1px solid #f5f5f5', color: '#444', verticalAlign: 'top', maxWidth: 280, wordBreak: 'break-word' },
+  btn:         { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '5px 12px', background: '#fafafa', color: '#555', border: '1px solid #e8e8e8', cursor: 'pointer' },
+  input:       { fontSize: 12, padding: '6px 8px', border: '1px solid #e0e0e0', outline: 'none', boxSizing: 'border-box', borderRadius: 4 },
+  stepCard:    { border: '1px solid #ebebeb', overflow: 'hidden', borderRadius: 6 },
+  stepHead:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #f0f0f0', backgroundColor: '#fafafa' },
+  stepNum:     { fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#555', fontWeight: 600 },
+  stepMeta:    { fontSize: 11, color: '#aaa' },
+  promptBlock: { padding: '12px 14px', borderBottom: '1px solid #f5f5f5' },
+  promptLabel: { fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' },
+  promptText:  { fontSize: 12, color: '#444', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
 }

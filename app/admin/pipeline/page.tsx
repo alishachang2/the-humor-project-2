@@ -536,7 +536,7 @@ export default function PipelinePage() {
         <h1 style={s.heading}><em>Pipeline.</em></h1>
       </div>
 
-      <div style={{ height: 2, backgroundColor: '#BDE081' }} />
+      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 0 }} />
 
       <div style={s.tabBar}>
         {TABS.map(t => (
@@ -648,26 +648,26 @@ export default function PipelinePage() {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page:        { minHeight: '100vh', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', animation: 'fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards' },
-  header:      { padding: '40px 48px 20px' },
-  eyebrow:     { fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 8px' },
-  heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 56, fontWeight: 400, lineHeight: 0.9, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
-  tabBar:      { display: 'flex', padding: '0 48px', borderBottom: '1px solid #eee' },
-  tabBtn:      { fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '12px 18px', background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.15s' },
-  content:     { padding: '36px 48px 56px', display: 'flex', flexDirection: 'column', gap: 36 },
-  divider:     { border: 'none', borderTop: '1px solid #f0f0f0', margin: 0 },
-  sectionTitle:{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', margin: 0 },
+  page:        { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
+  header:      { padding: '32px 32px 20px' },
+  eyebrow:     { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' },
+  heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
+  tabBar:      { display: 'flex', padding: '0 32px', borderBottom: '1px solid #f0f0f0' },
+  tabBtn:      { fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.15s' },
+  content:     { padding: '28px 32px 48px', display: 'flex', flexDirection: 'column', gap: 32 },
+  divider:     { border: 'none', borderTop: '1px solid #f5f5f5', margin: 0 },
+  sectionTitle:{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', margin: 0 },
   count:       { fontSize: 11, color: '#ccc' },
   empty:       { fontSize: 12, color: '#ccc', marginTop: 10 },
   table:       { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
-  th:          { textAlign: 'left', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbb', padding: '8px 12px', borderBottom: '1px solid #eee' },
-  td:          { padding: '9px 12px', borderBottom: '1px solid #f5f5f5', color: '#444', verticalAlign: 'top', maxWidth: 240, wordBreak: 'break-word' },
-  rowBtn:      { fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 10px', background: '#fafafa', color: '#555', border: '1px solid #e8e8e8', cursor: 'pointer' },
-  addBtn:      { fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 12px', background: '#1a1a1a', color: '#fff', border: 'none', cursor: 'pointer' },
-  formBox:     { background: '#fafafa', border: '1px solid #eee', padding: '18px 20px', marginBottom: 14 },
+  th:          { textAlign: 'left', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbb', padding: '8px 12px', borderBottom: '1px solid #f0f0f0' },
+  td:          { padding: '9px 12px', borderBottom: '1px solid #f8f8f8', color: '#444', verticalAlign: 'top', maxWidth: 240, wordBreak: 'break-word' },
+  rowBtn:      { fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 10px', background: '#fafafa', color: '#666', border: '1px solid #ebebeb', cursor: 'pointer', borderRadius: 4 },
+  addBtn:      { fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 12px', background: '#1a1a1a', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: 4 },
+  formBox:     { background: '#fafafa', border: '1px solid #ebebeb', padding: '16px 18px', marginBottom: 14, borderRadius: 6 },
   formTitle:   { fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', margin: '0 0 14px' },
   label:       { display: 'block', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#bbb', marginBottom: 5 },
-  input:       { width: '100%', fontSize: 12, padding: '7px 10px', border: '1px solid #e0e0e0', outline: 'none', boxSizing: 'border-box', backgroundColor: '#fff' },
-  saveBtn:     { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: '#1a1a1a', color: '#fff', border: '1px solid #1a1a1a', cursor: 'pointer' },
-  cancelBtn:   { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: 'none', color: '#999', border: '1px solid #e0e0e0', cursor: 'pointer' },
+  input:       { width: '100%', fontSize: 12, padding: '7px 10px', border: '1px solid #e8e8e8', outline: 'none', boxSizing: 'border-box', backgroundColor: '#fff', borderRadius: 4 },
+  saveBtn:     { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: '#1a1a1a', color: '#fff', border: '1px solid #1a1a1a', cursor: 'pointer', borderRadius: 4 },
+  cancelBtn:   { fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '7px 14px', background: 'none', color: '#999', border: '1px solid #e8e8e8', cursor: 'pointer', borderRadius: 4 },
 }

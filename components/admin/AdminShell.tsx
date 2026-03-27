@@ -20,12 +20,11 @@ export function AdminShell({ children }: AdminShellProps) {
   }
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
       <Sidebar />
-
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header onLogout={handleLogout} />
-        <main className="flex-1 overflow-y-auto px-12 py-8">
+        <main style={{ flex: 1, overflowY: 'auto', backgroundColor: '#fff' }}>
           {children}
         </main>
       </div>

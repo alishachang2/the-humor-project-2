@@ -10,260 +10,105 @@ type Profile = {
   email: string
 }
 
+const PAGE_SIZE = 10
+
 export default function AdminUsersPage() {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
-  const pageSize = 10
 
   useEffect(() => {
-    const fetchProfiles = async () => {
+    async function fetch() {
       setLoading(true)
       const supabase = createClient()
-      const { data: profile } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email')
-        .range(page * pageSize, page * pageSize + pageSize - 1)
-
-      setProfiles(profile ?? [])
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      setProfiles(data ?? [])
       setLoading(false)
     }
-
-    fetchProfiles()
+    fetch()
   }, [page])
 
   return (
-    <div style={styles.page}>
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap"
-        rel="stylesheet"
-      />
-      <div style={styles.header}>
-        <div style={styles.headerLeft}>
-          <p style={styles.eyebrow}>Directory</p>
-          <h1 style={styles.heading}>
-            <em style={styles.headingItalic}>Users.</em>
-          </h1>
+    <div style={s.page}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+
+      <div style={s.header}>
+        <div>
+          <p style={s.eyebrow}>Directory</p>
+          <h1 style={s.heading}><em>Users.</em></h1>
         </div>
-        <div style={styles.headerMeta}>
-          <span style={styles.metaCount}>
-            {loading ? '—' : `${profiles.length} shown`}
-          </span>
-          <span style={styles.metaPage}>Page {page + 1}</span>
-        </div>
+        <span style={{ fontSize: 12, color: '#bbb' }}>{loading ? '—' : `${profiles.length} shown · page ${page + 1}`}</span>
       </div>
 
-      <div style={styles.limeRule} />
+      <div style={s.rule} />
 
-      <div style={styles.tableHead}>
-        <span style={{ ...styles.col, ...styles.colName }}>Name</span>
-        <span style={{ ...styles.col, ...styles.colEmail }}>Email</span>
-        <span style={{ ...styles.col, ...styles.colId }}>ID</span>
+      {/* Table head */}
+      <div style={s.tableHead}>
+        <span style={{ ...s.col, flex: '0 0 30%' }}>#  Name</span>
+        <span style={{ ...s.col, flex: '0 0 45%' }}>Email</span>
+        <span style={{ ...s.col, flex: '0 0 25%' }}>ID</span>
       </div>
 
-      <div style={styles.tableBody}>
+      <div>
         {loading ? (
-          <div style={styles.emptyRow}>
-            <span style={styles.emptyText}>Loading…</span>
-          </div>
+          <p style={s.empty}>Loading…</p>
         ) : profiles.length === 0 ? (
-          <div style={styles.emptyRow}>
-            <span style={styles.emptyText}>No profiles found.</span>
-          </div>
-        ) : (
-          profiles.map((profile, i) => (
-            <div
-              key={profile.id}
-              style={styles.row}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FAFAFA')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-              <span style={{ ...styles.col, ...styles.colName, ...styles.rowName }}>
-                <span style={styles.rowIndex}>{String(page * pageSize + i + 1).padStart(2, '0')}</span>
+          <p style={s.empty}>No profiles found.</p>
+        ) : profiles.map((profile, i) => (
+          <div key={profile.id} style={s.row} className="user-row">
+            <span style={{ ...s.cell, flex: '0 0 30%', display: 'flex', gap: 14, alignItems: 'center' }}>
+              <span style={{ fontSize: 10, color: '#ccc', minWidth: 20, fontVariantNumeric: 'tabular-nums' }}>
+                {String(page * PAGE_SIZE + i + 1).padStart(2, '0')}
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>
                 {profile.first_name} {profile.last_name}
               </span>
-              <span style={{ ...styles.col, ...styles.colEmail, ...styles.rowEmail }}>
-                {profile.email}
-              </span>
-              <span style={{ ...styles.col, ...styles.colId, ...styles.rowId }}>
-                {profile.id.slice(0, 8)}…
-              </span>
-            </div>
-          ))
-        )}
+            </span>
+            <span style={{ ...s.cell, flex: '0 0 45%', fontSize: 12, color: '#666' }}>{profile.email}</span>
+            <span style={{ ...s.cell, flex: '0 0 25%', fontSize: 11, color: '#bbb', fontFamily: 'monospace' }}>
+              {profile.id.slice(0, 8)}…
+            </span>
+          </div>
+        ))}
       </div>
 
-      <div style={styles.bottomRule} />
+      <div style={{ height: 1, backgroundColor: '#f0f0f0', margin: '0 0 0' }} />
 
-      <div style={styles.bottomBar}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 32px' }}>
         <button
           onClick={() => setPage(p => Math.max(0, p - 1))}
           disabled={page === 0}
-          style={{ ...styles.pageBtn, ...(page === 0 ? styles.pageBtnDisabled : {}) }}
-          onMouseEnter={e => {
-            if (page !== 0) {
-              e.currentTarget.style.backgroundColor = '#2A2A2A'
-              e.currentTarget.style.color = '#fff'
-            }
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-            e.currentTarget.style.color = '#2A2A2A'
-          }}
-        >
-          ← Prev
-        </button>
-
-        <span style={styles.pageIndicator}>{page + 1}</span>
-
+          style={{ ...s.pageBtn, opacity: page === 0 ? 0.3 : 1, cursor: page === 0 ? 'not-allowed' : 'pointer' }}
+        >← Prev</button>
+        <span style={{ fontSize: 13, color: '#ccc' }}>{page + 1}</span>
         <button
           onClick={() => setPage(p => p + 1)}
-          disabled={profiles.length < pageSize}
-          style={{ ...styles.pageBtn, ...(profiles.length < pageSize ? styles.pageBtnDisabled : {}) }}
-          onMouseEnter={e => {
-            if (profiles.length >= pageSize) {
-              e.currentTarget.style.backgroundColor = '#2A2A2A'
-              e.currentTarget.style.color = '#fff'
-            }
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-            e.currentTarget.style.color = '#2A2A2A'
-          }}
-        >
-          Next →
-        </button>
+          disabled={profiles.length < PAGE_SIZE}
+          style={{ ...s.pageBtn, opacity: profiles.length < PAGE_SIZE ? 0.3 : 1, cursor: profiles.length < PAGE_SIZE ? 'not-allowed' : 'pointer' }}
+        >Next →</button>
       </div>
 
       <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        .user-row:hover { background-color: #fafafa !important; }
       `}</style>
     </div>
   )
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100vh',
-    backgroundColor: '#FFFFFF',
-    display: 'flex',
-    flexDirection: 'column',
-    fontFamily: 'inherit',
-    animation: 'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    padding: '40px 48px 24px',
-  },
-  headerLeft: { display: 'flex', flexDirection: 'column' as const },
-  eyebrow: {
-    fontSize: 10,
-    letterSpacing: '0.2em',
-    textTransform: 'uppercase' as const,
-    color: '#8A8A8A',
-    margin: '0 0 10px',
-  },
-  heading: {
-    fontFamily: "'DM Serif Display', serif",
-    fontSize: 72,
-    fontWeight: 400,
-    lineHeight: 0.9,
-    letterSpacing: '-0.03em',
-    color: '#2A2A2A',
-    margin: 0,
-  },
-  headingItalic: { fontStyle: 'italic', color: '#000' },
-  headerMeta: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'flex-end',
-    gap: 4,
-    paddingBottom: 8,
-  },
-  metaCount: { fontSize: 11, color: '#8A8A8A', letterSpacing: '0.04em' },
-  metaPage: { fontSize: 11, color: '#C0C0C0', letterSpacing: '0.04em' },
-  limeRule: { width: '100%', height: 2, backgroundColor: '#BDE081' },
-  tableHead: {
-    display: 'flex',
-    padding: '10px 48px',
-    borderBottom: '1px solid #E0E0E0',
-    backgroundColor: '#FAFAFA',
-  },
-  col: {
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: 10,
-    letterSpacing: '0.12em',
-    textTransform: 'uppercase' as const,
-    color: '#8A8A8A',
-  },
-  colName: { flex: '0 0 30%' },
-  colEmail: { flex: '0 0 45%' },
-  colId: { flex: '0 0 25%' },
-  tableBody: { flex: 1 },
-  row: {
-    display: 'flex',
-    padding: '14px 48px',
-    borderBottom: '1px solid #F0F0F0',
-    cursor: 'default',
-    transition: 'background-color 0.1s ease',
-  },
-  rowIndex: {
-    fontSize: 10,
-    color: '#C0C0C0',
-    letterSpacing: '0.08em',
-    marginRight: 16,
-    minWidth: 24,
-  },
-  rowName: { fontSize: 13, fontWeight: 500, color: '#2A2A2A' },
-  rowEmail: { fontSize: 12, color: '#8A8A8A', letterSpacing: '-0.01em' },
-  rowId: { fontSize: 11, color: '#C0C0C0', fontFamily: 'monospace', letterSpacing: '0.04em' },
-  emptyRow: {
-    padding: '48px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    fontSize: 12,
-    color: '#C0C0C0',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const,
-  },
-  bottomRule: { width: '100%', height: 1, backgroundColor: '#E0E0E0' },
-  bottomBar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '16px 48px',
-  },
-  pageBtn: {
-    fontSize: 11,
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const,
-    color: '#2A2A2A',
-    background: 'transparent',
-    border: '1px solid #2A2A2A',
-    padding: '8px 20px',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s ease, color 0.15s ease',
-    borderRadius: 0,
-  },
-  pageBtnDisabled: {
-    color: '#C0C0C0',
-    borderColor: '#E0E0E0',
-    cursor: 'not-allowed',
-  },
-  pageIndicator: {
-    fontFamily: "'DM Serif Display', serif",
-    fontStyle: 'italic',
-    fontSize: 24,
-    color: '#2A2A2A',
-    letterSpacing: '-0.02em',
-  },
+const s: Record<string, React.CSSProperties> = {
+  page:      { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
+  header:    { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '32px 32px 20px' },
+  eyebrow:   { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' },
+  heading:   { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
+  rule:      { height: 2, backgroundColor: '#BDE081', marginBottom: 0 },
+  tableHead: { display: 'flex', padding: '10px 32px', borderBottom: '1px solid #f0f0f0', backgroundColor: '#fafafa' },
+  col:       { fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#bbb' },
+  row:       { display: 'flex', padding: '12px 32px', borderBottom: '1px solid #f5f5f5', transition: 'background-color 0.1s' },
+  cell:      { display: 'flex', alignItems: 'center' },
+  empty:     { padding: '40px 32px', fontSize: 12, color: '#ccc', textAlign: 'center' },
+  pageBtn:   { fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 14px', background: 'none', color: '#666', border: '1px solid #e8e8e8', cursor: 'pointer' },
 }

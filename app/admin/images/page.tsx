@@ -189,7 +189,7 @@ export default function ImagesPage() {
         </div>
       </div>
 
-      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 24 }} />
+      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 20 }} />
 
       <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleUpload} />
 
@@ -284,7 +284,7 @@ export default function ImagesPage() {
 
           <div style={{ height: 1, backgroundColor: '#eee', margin: '32px 0 0' }} />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 48px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 32px' }}>
             <button
               type="button"
               onClick={() => setPage(p => Math.max(0, p - 1))}
@@ -318,30 +318,30 @@ export default function ImagesPage() {
 
 const s: Record<string, React.CSSProperties> = {
   page: {
-    minHeight: '100vh',
     backgroundColor: '#fff',
     display: 'flex',
     flexDirection: 'column',
-    animation: 'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+    minHeight: '100%',
+    animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards',
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    padding: '40px 48px 24px',
+    padding: '32px 32px 20px',
   },
-  eyebrow: { fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', margin: '0 0 10px' },
+  eyebrow: { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' },
   heading: {
     fontFamily: "'DM Serif Display', serif",
-    fontSize: 64,
+    fontSize: 40,
     fontWeight: 400,
-    lineHeight: 0.9,
+    lineHeight: 1,
     letterSpacing: '-0.02em',
     color: '#1a1a1a',
     margin: 0,
   },
   uploadZone: {
-    margin: '0 48px 32px',
+    margin: '0 32px 28px',
     border: '2px dashed #ddd',
     padding: '32px 24px',
     textAlign: 'center',
@@ -351,8 +351,8 @@ const s: Record<string, React.CSSProperties> = {
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 20,
-    padding: '0 48px',
+    gap: 16,
+    padding: '0 32px',
   },
   card: { border: '1px solid #eee', backgroundColor: '#fff', overflow: 'hidden' },
   captionBlock: { padding: '14px 16px', borderBottom: '1px solid #f0f0f0', minHeight: 108 },

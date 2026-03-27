@@ -153,7 +153,7 @@ export default function AdminPage() {
         <h1 style={s.heading}><em>Overview.</em></h1>
       </div>
 
-      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 40 }} />
+      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 24 }} />
 
       {loading ? (
         <p style={{ padding: '0 48px', fontSize: 12, color: '#ccc' }}>Loading…</p>
@@ -258,12 +258,12 @@ export default function AdminPage() {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page:        { minHeight: '100vh', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', animation: 'fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards' },
-  header:      { padding: '40px 48px 20px' },
-  eyebrow:     { fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 8px' },
-  heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 56, fontWeight: 400, lineHeight: 0.9, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
-  body:        { padding: '0 48px 56px', display: 'flex', flexDirection: 'column', gap: 36 },
-  statsGrid:   { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 },
-  mainRow:     { display: 'flex', gap: 20, alignItems: 'flex-start' },
-  activityRow: { display: 'flex', gap: 20 },
+  page:        { backgroundColor: '#fff', display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards' },
+  header:      { padding: '32px 32px 20px' },
+  eyebrow:     { fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 6px' },
+  heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
+  body:        { padding: '0 32px 48px', display: 'flex', flexDirection: 'column', gap: 28 },
+  statsGrid:   { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 },
+  mainRow:     { display: 'flex', gap: 16, alignItems: 'flex-start' },
+  activityRow: { display: 'flex', gap: 16 },
 }
