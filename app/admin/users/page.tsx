@@ -18,6 +18,15 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft')  setPage(p => Math.max(0, p - 1))
+      if (e.key === 'ArrowRight') setPage(p => (profiles.length < PAGE_SIZE ? p : p + 1))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [profiles.length])
+
+  useEffect(() => {
     async function fetch() {
       setLoading(true)
       const supabase = createClient()

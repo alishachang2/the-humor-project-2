@@ -33,6 +33,15 @@ export default function ImagesPage() {
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft')  setPage(p => Math.max(0, p - 1))
+      if (e.key === 'ArrowRight') setPage(p => Math.min(totalPages - 1, p + 1))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [totalPages])
+
   useEffect(() => { fetchImages() }, [page])
 
   async function fetchImages() {
