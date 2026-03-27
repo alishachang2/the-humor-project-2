@@ -269,9 +269,10 @@ function CaptionsSection() {
 // ─── humor flavors + steps (card grid + drill-down) ──────────────────────────
 
 function HumorFlavorsSection() {
-  const [flavors, setFlavors]       = useState<Row[]>([])
-  const [selected, setSelected]     = useState<Row | null>(null)
-  const [steps, setSteps]           = useState<Row[]>([])
+  const [flavors, setFlavors]         = useState<Row[]>([])
+  const [selected, setSelected]       = useState<Row | null>(null)
+  const [steps, setSteps]             = useState<Row[]>([])
+  const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set())
   const [loadingFlavors, setLoadingFlavors] = useState(true)
   const [loadingSteps, setLoadingSteps]     = useState(false)
 
@@ -285,8 +286,17 @@ function HumorFlavorsSection() {
     load()
   }, [])
 
+  function toggleStep(id: string) {
+    setExpandedSteps(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
   async function openFlavor(flavor: Row) {
     setSelected(flavor)
+    setExpandedSteps(new Set())
     setLoadingSteps(true)
     const supabase = createClient()
     const { data, error } = await supabase
@@ -318,38 +328,71 @@ function HumorFlavorsSection() {
         {!loadingSteps && steps.length === 0 && <p style={s.empty}>No steps for this flavor.</p>}
         {!loadingSteps && steps.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {steps.map((step, si) => (
-              <div key={String(step.id)}>
-                <div style={s.stepCard}>
-                  <div style={s.stepHead}>
-                    <span style={s.stepNum}>Step {String(step.order ?? step.step_order ?? si + 1)}</span>
-                    <div style={{ display: 'flex', gap: 20 }}>
-                      {!!step.input_type  && <span style={s.stepMeta}>in: <strong>{String(step.input_type)}</strong></span>}
-                      {!!step.output_type && <span style={s.stepMeta}>out: <strong>{String(step.output_type)}</strong></span>}
-                      {step.temperature != null && <span style={s.stepMeta}>temp: <strong>{String(step.temperature)}</strong></span>}
+            {steps.map((step, si) => {
+              const sid = String(step.id)
+              const isOpen = expandedSteps.has(sid)
+              const desc = step.description ? String(step.description) : null
+              return (
+                <div key={sid}>
+                  <div style={{ ...s.stepCard, cursor: 'pointer' }} onClick={() => toggleStep(sid)}>
+                    {/* Header row — always visible */}
+                    <div style={{ ...s.stepHead, userSelect: 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 9, color: '#bbb', display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                        <span style={s.stepNum}>Step {String(step.order ?? step.step_order ?? si + 1)}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 20 }}>
+                        {!!step.input_type  && <span style={s.stepMeta}>in: <strong>{String(step.input_type)}</strong></span>}
+                        {!!step.output_type && <span style={s.stepMeta}>out: <strong>{String(step.output_type)}</strong></span>}
+                        {step.temperature != null && <span style={s.stepMeta}>temp: <strong>{String(step.temperature)}</strong></span>}
+                      </div>
                     </div>
+
+                    {/* Description — always visible, truncated */}
+                    {desc && (
+                      <div style={{ padding: '8px 14px', borderBottom: isOpen ? '1px solid #f0f0f0' : 'none', backgroundColor: '#fafafa' }}>
+                        <p style={{ fontSize: 12, color: '#777', margin: 0, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: isOpen ? undefined : 2, WebkitBoxOrient: 'vertical' }}>
+                          {desc}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Expanded: prompts + extra fields */}
+                    {isOpen && (
+                      <>
+                        {!!step.system_prompt && (
+                          <div style={s.promptBlock}>
+                            <p style={s.promptLabel}>System Prompt</p>
+                            <PromptText text={String(step.system_prompt)} />
+                          </div>
+                        )}
+                        {!!step.user_prompt && (
+                          <div style={{ ...s.promptBlock, backgroundColor: '#f9fef0', borderColor: '#ddf09a' }}>
+                            <p style={s.promptLabel}>User Prompt</p>
+                            <PromptText text={String(step.user_prompt)} />
+                          </div>
+                        )}
+                        {Object.entries(step)
+                          .filter(([k, v]) => !['id','humor_flavor_id','humor_flavor_step_type_id','order','step_order','input_type','output_type','temperature','system_prompt','user_prompt','description','created_datetime_utc','modified_datetime_utc'].includes(k) && v != null)
+                          .map(([k, v]) => (
+                            <div key={k} style={{ ...s.promptBlock, backgroundColor: '#fafafa' }}>
+                              <p style={s.promptLabel}>{k}</p>
+                              <PromptText text={String(v)} />
+                            </div>
+                          ))
+                        }
+                      </>
+                    )}
                   </div>
-                  {!!step.system_prompt && (
-                    <div style={s.promptBlock}>
-                      <p style={s.promptLabel}>System Prompt</p>
-                      <PromptText text={String(step.system_prompt)} />
-                    </div>
-                  )}
-                  {!!step.user_prompt && (
-                    <div style={{ ...s.promptBlock, backgroundColor: '#f9fef0', borderColor: '#ddf09a' }}>
-                      <p style={s.promptLabel}>User Prompt</p>
-                      <PromptText text={String(step.user_prompt)} />
+                  {si < steps.length - 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px' }}>
+                      <div style={{ width: 1, height: 16, backgroundColor: '#ddd', marginLeft: 14 }} />
+                      <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>output → next step input</span>
                     </div>
                   )}
                 </div>
-                {si < steps.length - 1 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px' }}>
-                    <div style={{ width: 1, height: 16, backgroundColor: '#ddd', marginLeft: 14 }} />
-                    <span style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>output → next step input</span>
-                  </div>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </Section>
@@ -534,6 +577,41 @@ function HumorMixSection() {
   )
 }
 
+// ─── study emails (profiles where is_in_study = true) ────────────────────────
+
+function StudyEmailsSection() {
+  const [rows, setRows] = useState<Row[]>([])
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, email, first_name, last_name')
+        .eq('is_in_study', true)
+        .order('created_datetime_utc', { ascending: false })
+      setRows(data ?? [])
+    }
+    load()
+  }, [])
+
+  return (
+    <Section title="Study Participants" count={rows.length}>
+      {!rows.length ? <p style={s.empty}>No profiles with is_in_study = true.</p> : (
+        <div style={{ border: '1px solid #eee' }}>
+          {rows.map((row, i) => (
+            <div key={String(row.id)} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 14px', borderBottom: i < rows.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+              <span style={{ fontSize: 12, color: '#333', flex: 1 }}>{String(row.email ?? '—')}</span>
+              <span style={{ fontSize: 12, color: '#888' }}>{String(row.first_name ?? '')} {String(row.last_name ?? '')}</span>
+              <span style={{ fontSize: 10, color: '#bbb', fontFamily: 'monospace' }}>{String(row.id).slice(0, 8)}…</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Section>
+  )
+}
+
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function PipelinePage() {
@@ -642,11 +720,7 @@ export default function PipelinePage() {
               fields={[{ key: 'domain', label: 'Domain (e.g. company.com)' }]}
             />
             <hr style={s.divider} />
-            <CrudSection
-              title="Whitelisted Emails"
-              table="whitelisted_emails"
-              fields={[{ key: 'email', label: 'Email Address' }]}
-            />
+            <StudyEmailsSection />
           </>
         )}
       </div>
