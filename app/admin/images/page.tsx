@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, DragEvent, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type ImageRecord = {
@@ -14,7 +14,6 @@ type Caption = {
   image_id: string
 }
 
-const BUCKET = 'images'
 const PAGE_SIZE = 9
 
 export default function ImagesPage() {
@@ -62,6 +61,7 @@ export default function ImagesPage() {
         .from('captions')
         .select('id, content, image_id')
         .in('image_id', ids)
+        .order('created_datetime_utc', { ascending: true })
 
       const grouped: Record<string, Caption[]> = {}
       for (const c of captionData ?? []) {
@@ -101,16 +101,21 @@ export default function ImagesPage() {
     const supabase = createClient()
 
     for (const file of files) {
-      const path = `${Date.now()}-${file.name}`
+      const res = await fetch('/api/presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+      if (!res.ok) { console.error('Failed to get presigned URL'); continue }
 
-      const { error: storageError } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file)
-      if (storageError) { console.error(storageError); continue }
+      const { presignedUrl, publicUrl } = await res.json()
 
-      const { data: { publicUrl } } = supabase.storage
-        .from(BUCKET)
-        .getPublicUrl(path)
+      const uploadRes = await fetch(presignedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      })
+      if (!uploadRes.ok) { console.error('Failed to upload to S3'); continue }
 
       const { error: dbError } = await supabase
         .from('images')
@@ -217,7 +222,7 @@ export default function ImagesPage() {
                     ) : (
                       <>
                         <p style={{ fontSize: 12, color: '#555', lineHeight: 1.5, margin: '0 0 10px', minHeight: 36 }}>
-                          {currentCaption?.content}
+                          {currentCaption?.content ?? <span style={{ color: '#ccc' }}>No text yet</span>}
                         </p>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <button type="button" onClick={() => prevCaption(image.id)} style={s.arrowBtn}>←</button>
