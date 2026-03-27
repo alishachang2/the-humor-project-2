@@ -269,8 +269,8 @@ function HumorFlavorsSection() {
       ])
       setFlavors(fData ?? [])
       const sorted = (sData ?? []).sort((a, b) => {
-        const aO = Number(a.order ?? a.step_order ?? 0)
-        const bO = Number(b.order ?? b.step_order ?? 0)
+        const aO = Number(a.humor_flavor_step_type_id ?? 0)
+        const bO = Number(b.humor_flavor_step_type_id ?? 0)
         return aO - bO
       })
       setSteps(sorted)
@@ -287,7 +287,7 @@ function HumorFlavorsSection() {
   }
 
   function stepsFor(flavorId: string) {
-    return steps.filter(s => String(s.flavor_id) === flavorId)
+    return steps.filter(s => String(s.humor_flavor_id) === flavorId)
   }
 
   return (

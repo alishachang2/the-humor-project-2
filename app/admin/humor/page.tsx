@@ -53,11 +53,11 @@ export default function HumorPage() {
     const { data, error } = await supabase
       .from('humor_flavor_steps')
       .select('*')
-      .eq('flavor_id', flavor.id)
+      .eq('humor_flavor_id', flavor.id)
     if (error) console.error('humor_flavor_steps:', error)
     const sorted = (data ?? []).sort((a, b) => {
-      const aO = Number(a.order ?? a.step_order ?? 0)
-      const bO = Number(b.order ?? b.step_order ?? 0)
+      const aO = Number(a.humor_flavor_step_type_id ?? 0)
+      const bO = Number(b.humor_flavor_step_type_id ?? 0)
       return aO - bO
     })
     setSteps(sorted)
