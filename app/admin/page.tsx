@@ -7,68 +7,50 @@ type ProfileRow = { id: string; created_datetime_utc: string }
 type ImageRow   = { id: string; url: string; created_datetime_utc: string }
 type CaptionRow = { id: string; content: string; created_datetime_utc: string }
 
-// ─── tiny SVG line chart ──────────────────────────────────────────────────────
+// ─── SVG line chart ───────────────────────────────────────────────────────────
 
 function LineChart({ data, color = '#BDE081' }: { data: { label: string; value: number }[]; color?: string }) {
-  if (data.length < 2) return <p style={{ fontSize: 12, color: '#ccc' }}>Not enough data.</p>
+  if (data.length < 2) return <p style={{ fontSize: 12, color: '#ccc', margin: 0 }}>Not enough data.</p>
 
-  const W = 560, H = 140, PAD = { top: 10, right: 16, bottom: 28, left: 36 }
-  const innerW = W - PAD.left - PAD.right
-  const innerH = H - PAD.top - PAD.bottom
-  const maxVal = Math.max(...data.map(d => d.value), 1)
-  const step = innerW / (data.length - 1)
+  const W = 560, H = 120, PAD = { top: 8, right: 12, bottom: 24, left: 30 }
+  const iW = W - PAD.left - PAD.right
+  const iH = H - PAD.top - PAD.bottom
+  const max = Math.max(...data.map(d => d.value), 1)
+  const step = iW / (data.length - 1)
 
   const pts = data.map((d, i) => ({
     x: PAD.left + i * step,
-    y: PAD.top + innerH - (d.value / maxVal) * innerH,
+    y: PAD.top + iH - (d.value / max) * iH,
     ...d,
   }))
 
-  const polyline = pts.map(p => `${p.x},${p.y}`).join(' ')
-  const area = [
-    `M${pts[0].x},${PAD.top + innerH}`,
-    ...pts.map(p => `L${p.x},${p.y}`),
-    `L${pts[pts.length - 1].x},${PAD.top + innerH}`,
-    'Z',
-  ].join(' ')
-
-  // show ~5 x-axis labels evenly
+  const line = pts.map(p => `${p.x},${p.y}`).join(' ')
+  const area = [`M${pts[0].x},${PAD.top + iH}`, ...pts.map(p => `L${p.x},${p.y}`), `L${pts.at(-1)!.x},${PAD.top + iH}`, 'Z'].join(' ')
   const labelStep = Math.max(1, Math.floor(data.length / 5))
   const xLabels = pts.filter((_, i) => i % labelStep === 0 || i === pts.length - 1)
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
-      {/* area fill */}
       <defs>
-        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+        <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor={color} stopOpacity="0.15" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={area} fill="url(#areaGrad)" />
-
-      {/* grid lines */}
-      {[0, 0.25, 0.5, 0.75, 1].map(t => {
-        const y = PAD.top + innerH * (1 - t)
+      <path d={area} fill="url(#ag)" />
+      {[0, 0.5, 1].map(t => {
+        const y = PAD.top + iH * (1 - t)
         return (
           <g key={t}>
             <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#f0f0f0" strokeWidth="1" />
-            <text x={PAD.left - 6} y={y + 3.5} textAnchor="end" fontSize={9} fill="#bbb">
-              {Math.round(maxVal * t)}
-            </text>
+            <text x={PAD.left - 5} y={y + 3.5} textAnchor="end" fontSize={8} fill="#ccc">{Math.round(max * t)}</text>
           </g>
         )
       })}
-
-      {/* line */}
-      <polyline points={polyline} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-
-      {/* dots */}
-      {pts.map(p => <circle key={p.label} cx={p.x} cy={p.y} r={3} fill={color} />)}
-
-      {/* x labels */}
+      <polyline points={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      {pts.map(p => <circle key={p.label} cx={p.x} cy={p.y} r={2.5} fill={color} />)}
       {xLabels.map(p => (
-        <text key={p.label} x={p.x} y={H - 4} textAnchor="middle" fontSize={9} fill="#bbb">{p.label}</text>
+        <text key={p.label} x={p.x} y={H - 2} textAnchor="middle" fontSize={8} fill="#ccc">{p.label}</text>
       ))}
     </svg>
   )
@@ -80,13 +62,11 @@ function groupByDay(rows: { created_datetime_utc: string }[], days = 30) {
   const counts: Record<string, number> = {}
   const now = Date.now()
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now - i * 86400000)
-    const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const key = new Date(now - i * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     counts[key] = 0
   }
   for (const row of rows) {
-    const d = new Date(row.created_datetime_utc)
-    const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const key = new Date(row.created_datetime_utc).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     if (key in counts) counts[key]++
   }
   return Object.entries(counts).map(([label, value]) => ({ label, value }))
@@ -101,29 +81,27 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-// ─── stat card ────────────────────────────────────────────────────────────────
+// ─── sub-components ───────────────────────────────────────────────────────────
 
-function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div style={{ border: '1px solid #eee', padding: '20px 24px', backgroundColor: '#fff' }}>
-      <p style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 10px' }}>{label}</p>
-      <p style={{ fontSize: 36, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: '#1a1a1a', margin: 0, lineHeight: 1 }}>{value}</p>
-      {sub && <p style={{ fontSize: 11, color: '#bbb', margin: '8px 0 0' }}>{sub}</p>}
-    </div>
-  )
+function Label({ children }: { children: React.ReactNode }) {
+  return <p style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 12px' }}>{children}</p>
+}
+
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <div style={{ border: '1px solid #ebebeb', backgroundColor: '#fff', ...style }}>{children}</div>
 }
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
-  const [profiles, setProfiles]     = useState<ProfileRow[]>([])
-  const [totalImages, setTotalImages] = useState(0)
+  const [profiles, setProfiles]           = useState<ProfileRow[]>([])
+  const [totalImages, setTotalImages]     = useState(0)
   const [totalCaptions, setTotalCaptions] = useState(0)
-  const [totalFlavors, setTotalFlavors] = useState(0)
-  const [recentImages, setRecentImages] = useState<ImageRow[]>([])
+  const [totalFlavors, setTotalFlavors]   = useState(0)
+  const [recentImages, setRecentImages]   = useState<ImageRow[]>([])
   const [recentCaptions, setRecentCaptions] = useState<CaptionRow[]>([])
   const [spotlightImage, setSpotlightImage] = useState<ImageRow | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]             = useState(true)
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -164,119 +142,106 @@ export default function AdminPage() {
   }, [])
 
   const userGrowthData = groupByDay(profiles, 30)
-  const newUsersToday = userGrowthData[userGrowthData.length - 1]?.value ?? 0
+  const newUsersToday  = userGrowthData.at(-1)?.value ?? 0
 
   return (
     <div style={s.page}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
 
-      {/* Header */}
       <div style={s.header}>
-        <div>
-          <p style={s.eyebrow}>{today}</p>
-          <h1 style={s.heading}><em>Overview.</em></h1>
-        </div>
+        <p style={s.eyebrow}>{today}</p>
+        <h1 style={s.heading}><em>Overview.</em></h1>
       </div>
 
-      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 36 }} />
+      <div style={{ height: 2, backgroundColor: '#BDE081', marginBottom: 40 }} />
 
       {loading ? (
         <p style={{ padding: '0 48px', fontSize: 12, color: '#ccc' }}>Loading…</p>
       ) : (
         <div style={s.body}>
 
-          {/* ── Stat cards ── */}
+          {/* Stats row */}
           <div style={s.statsGrid}>
-            <StatCard label="Total Users"    value={profiles.length} sub={newUsersToday > 0 ? `+${newUsersToday} today` : 'none today'} />
-            <StatCard label="Total Images"   value={totalImages} />
-            <StatCard label="Total Captions" value={totalCaptions} />
-            <StatCard label="Humor Flavors"  value={totalFlavors} />
+            {[
+              { label: 'Users',    value: profiles.length, note: newUsersToday > 0 ? `+${newUsersToday} today` : undefined },
+              { label: 'Images',   value: totalImages },
+              { label: 'Captions', value: totalCaptions },
+              { label: 'Flavors',  value: totalFlavors },
+            ].map(({ label, value, note }) => (
+              <Card key={label} style={{ padding: '18px 22px' }}>
+                <p style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 8px' }}>{label}</p>
+                <p style={{ fontSize: 40, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: '#1a1a1a', margin: 0, lineHeight: 1 }}>{value}</p>
+                {note && <p style={{ fontSize: 10, color: '#BDE081', margin: '6px 0 0' }}>{note}</p>}
+              </Card>
+            ))}
           </div>
 
-          {/* ── Main row: chart + spotlight ── */}
+          {/* Chart + Spotlight */}
           <div style={s.mainRow}>
-
-            {/* User growth chart */}
             <div style={{ flex: '1 1 0', minWidth: 0 }}>
-              <p style={s.sectionTitle}>User Growth — Last 30 Days</p>
-              <p style={s.sectionSub}>{profiles.length} total users</p>
-              <div style={{ border: '1px solid #eee', padding: '20px 16px 12px', backgroundColor: '#fff' }}>
+              <Label>User growth — last 30 days</Label>
+              <Card style={{ padding: '18px 16px 12px' }}>
                 <LineChart data={userGrowthData} />
-              </div>
+              </Card>
             </div>
 
-            {/* Spotlight image */}
-            <div style={{ width: 260, flexShrink: 0 }}>
-              <p style={s.sectionTitle}>Image Spotlight</p>
-              <p style={s.sectionSub}>Random pick</p>
+            <div style={{ width: 220, flexShrink: 0 }}>
+              <Label>Image spotlight</Label>
               {spotlightImage ? (
-                <div style={{ border: '1px solid #eee', overflow: 'hidden', backgroundColor: '#fff' }}>
+                <Card style={{ overflow: 'hidden' }}>
                   <div style={{ aspectRatio: '1', overflow: 'hidden', backgroundColor: '#f5f5f5' }}>
-                    <img
-                      src={spotlightImage.url}
-                      alt="spotlight"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                    <img src={spotlightImage.url} alt="spotlight" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
-                  <div style={{ padding: '12px 14px' }}>
-                    <p style={{ fontSize: 10, color: '#bbb', margin: 0, letterSpacing: '0.06em' }}>
-                      Uploaded {timeAgo(spotlightImage.created_datetime_utc)}
-                    </p>
-                    <p style={{ fontSize: 9, color: '#ddd', margin: '4px 0 0', wordBreak: 'break-all' }}>
-                      {spotlightImage.id}
-                    </p>
+                  <div style={{ padding: '10px 12px' }}>
+                    <p style={{ fontSize: 10, color: '#bbb', margin: 0 }}>Uploaded {timeAgo(spotlightImage.created_datetime_utc)}</p>
                   </div>
-                </div>
+                </Card>
               ) : (
-                <div style={{ border: '1px solid #eee', padding: 24, textAlign: 'center' }}>
+                <Card style={{ padding: 20, textAlign: 'center' }}>
                   <p style={{ fontSize: 12, color: '#ccc', margin: 0 }}>No images yet</p>
-                </div>
+                </Card>
               )}
             </div>
           </div>
 
-          {/* ── Recent activity ── */}
+          {/* Recent activity */}
           <div style={s.activityRow}>
-
-            {/* Recent uploads */}
-            <div style={{ flex: 1 }}>
-              <p style={s.sectionTitle}>Recent Uploads</p>
-              <p style={s.sectionSub}>Last 5 images</p>
-              <div style={{ border: '1px solid #eee', backgroundColor: '#fff' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Label>Recent uploads</Label>
+              <Card>
                 {recentImages.length === 0 ? (
-                  <p style={{ padding: 16, fontSize: 12, color: '#ccc', margin: 0 }}>No images yet.</p>
+                  <p style={{ padding: '14px 16px', fontSize: 12, color: '#ccc', margin: 0 }}>No images yet.</p>
                 ) : recentImages.map((img, i) => (
                   <div key={img.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: i < recentImages.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
-                    <div style={{ width: 36, height: 36, flexShrink: 0, overflow: 'hidden', backgroundColor: '#f5f5f5' }}>
+                    <div style={{ width: 32, height: 32, flexShrink: 0, overflow: 'hidden', backgroundColor: '#f5f5f5' }}>
                       <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 11, color: '#333', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{img.url.split('/').pop()}</p>
-                    </div>
-                    <span style={{ fontSize: 10, color: '#bbb', flexShrink: 0 }}>{timeAgo(img.created_datetime_utc)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent captions */}
-            <div style={{ flex: 1 }}>
-              <p style={s.sectionTitle}>Recent Captions</p>
-              <p style={s.sectionSub}>Last 5 generated</p>
-              <div style={{ border: '1px solid #eee', backgroundColor: '#fff' }}>
-                {recentCaptions.length === 0 ? (
-                  <p style={{ padding: 16, fontSize: 12, color: '#ccc', margin: 0 }}>No captions yet.</p>
-                ) : recentCaptions.map((cap, i) => (
-                  <div key={cap.id} style={{ padding: '10px 14px', borderBottom: i < recentCaptions.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
-                    <p style={{ fontSize: 12, color: '#333', margin: '0 0 4px', lineHeight: 1.4 }}>
-                      {cap.content ? String(cap.content).slice(0, 100) + (String(cap.content).length > 100 ? '…' : '') : <span style={{ color: '#ccc' }}>—</span>}
+                    <p style={{ flex: 1, fontSize: 12, color: '#444', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {img.url.split('/').pop()}
                     </p>
-                    <span style={{ fontSize: 10, color: '#bbb' }}>{timeAgo(cap.created_datetime_utc)}</span>
+                    <span style={{ fontSize: 10, color: '#ccc', flexShrink: 0 }}>{timeAgo(img.created_datetime_utc)}</span>
                   </div>
                 ))}
-              </div>
+              </Card>
             </div>
 
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Label>Recent captions</Label>
+              <Card>
+                {recentCaptions.length === 0 ? (
+                  <p style={{ padding: '14px 16px', fontSize: 12, color: '#ccc', margin: 0 }}>No captions yet.</p>
+                ) : recentCaptions.map((cap, i) => (
+                  <div key={cap.id} style={{ padding: '11px 14px', borderBottom: i < recentCaptions.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                    <p style={{ fontSize: 12, color: '#444', margin: '0 0 5px', lineHeight: 1.5 }}>
+                      {cap.content
+                        ? String(cap.content).length > 100 ? String(cap.content).slice(0, 100) + '…' : cap.content
+                        : <span style={{ color: '#ccc' }}>—</span>}
+                    </p>
+                    <span style={{ fontSize: 10, color: '#ccc' }}>{timeAgo(cap.created_datetime_utc)}</span>
+                  </div>
+                ))}
+              </Card>
+            </div>
           </div>
 
         </div>
@@ -284,7 +249,7 @@ export default function AdminPage() {
 
       <style>{`
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(10px); }
+          from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
@@ -293,14 +258,12 @@ export default function AdminPage() {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  page:         { minHeight: '100vh', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', animation: 'fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards' },
-  header:       { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '40px 48px 24px' },
-  eyebrow:      { fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', margin: '0 0 10px' },
-  heading:      { fontFamily: "'DM Serif Display', serif", fontSize: 64, fontWeight: 400, lineHeight: 0.9, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
-  body:         { padding: '0 48px 48px', display: 'flex', flexDirection: 'column', gap: 40 },
-  statsGrid:    { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 },
-  mainRow:      { display: 'flex', gap: 24, alignItems: 'flex-start' },
-  activityRow:  { display: 'flex', gap: 24 },
-  sectionTitle: { fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', margin: '0 0 4px' },
-  sectionSub:   { fontSize: 12, color: '#bbb', margin: '0 0 14px' },
+  page:        { minHeight: '100vh', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', animation: 'fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards' },
+  header:      { padding: '40px 48px 20px' },
+  eyebrow:     { fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#bbb', margin: '0 0 8px' },
+  heading:     { fontFamily: "'DM Serif Display', serif", fontSize: 56, fontWeight: 400, lineHeight: 0.9, letterSpacing: '-0.02em', color: '#1a1a1a', margin: 0 },
+  body:        { padding: '0 48px 56px', display: 'flex', flexDirection: 'column', gap: 36 },
+  statsGrid:   { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 },
+  mainRow:     { display: 'flex', gap: 20, alignItems: 'flex-start' },
+  activityRow: { display: 'flex', gap: 20 },
 }
